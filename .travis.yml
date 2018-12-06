@@ -13,4 +13,16 @@ services:
   - docker
 
 after_deploy:
-  - echo "done deploying"
+  - echo "Done deploying"
+
+deploy:
+  provider: elasticbeanstalk
+  access_key_id: $ACCESSKEYID
+  secret_access_key:
+    secure: "$SECRETACCESSKEY"
+  region: "$REGION"
+  app: "hkuf-backbone"
+  env: "$ENV"
+  bucket_name: "$BUCKETNAME"
+  on:
+    branch: master
