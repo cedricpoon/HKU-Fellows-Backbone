@@ -1,0 +1,21 @@
+{
+  "name": "hku-fellows-backbone",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "docker": "npm run build-docker && npm run start-docker && ./scripts/post-docker.sh",
+    "build-docker": "docker build . -t hkuf-backbone",
+    "start-docker": "docker run -p 8080:80 -d hkuf-backbone",
+    "remove-docker": "./scripts/remove-docker.sh",
+    "stop-docker": "./scripts/stop-docker.sh"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "express": "~4.16.0",
+    "http-errors": "~1.6.2",
+    "jade": "~1.11.0",
+    "morgan": "~1.9.0"
+  }
+}
