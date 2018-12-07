@@ -6,7 +6,7 @@
     "start": "node ./bin/www",
     "docker": "npm run build-docker && npm run start-docker && ./scripts/post-docker.sh",
     "build-docker": "docker build . -t hkuf-backbone",
-    "start-docker": "docker run -p 8080:80 -d hkuf-backbone",
+    "start-docker": "docker run -p 8443:443 -d hkuf-backbone",
     "remove-docker": "./scripts/remove-docker.sh",
     "stop-docker": "./scripts/stop-docker.sh"
   },

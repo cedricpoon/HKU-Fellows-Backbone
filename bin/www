@@ -6,20 +6,25 @@
 
 var app = require('../app');
 var debug = require('debug')('hku-fellows-backbone:server');
-var http = require('http');
+var https = require('https');
+var fs =require('fs');
+
+var privateKey  = fs.readFileSync('sslcert/key.pem', 'utf8');
+var certificate = fs.readFileSync('sslcert/certificate.pem', 'utf8');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '8080');
+var port = normalizePort(process.env.PORT || '8443');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create HTTPS server.
  */
 
-var server = http.createServer(app);
+var credentials = { key: privateKey, cert: certificate };
+var server = https.createServer(credentials, app);
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -50,7 +55,7 @@ function normalizePort(val) {
 }
 
 /**
- * Event listener for HTTP server "error" event.
+ * Event listener for HTTPS server "error" event.
  */
 
 function onError(error) {
@@ -78,7 +83,7 @@ function onError(error) {
 }
 
 /**
- * Event listener for HTTP server "listening" event.
+ * Event listener for HTTPS server "listening" event.
  */
 
 function onListening() {

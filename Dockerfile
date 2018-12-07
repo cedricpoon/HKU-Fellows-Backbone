@@ -16,9 +16,9 @@ RUN npm install
 # Bundle app source
 COPY . .
 
-# use port 80 as IO port
-ENV PORT=80
+# use port 443 as IO port
+ENV PORT=443
 
-EXPOSE 80
+EXPOSE 443
 
 CMD [ "npm", "start" ]
