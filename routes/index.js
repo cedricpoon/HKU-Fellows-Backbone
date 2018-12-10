@@ -3,10 +3,22 @@ var router = express.Router();
 
 /* hello world placeholder */
 router.all('/', function(req, res, next) {
-  res.json({
-    app: 'hkuf-backbone',
-    status: res.statusCode,
-    message: 'Hello World!'
+
+  req.db.query("select * from Demo limit 1", function (err, result) {
+    if (err) {
+      console.log(err);
+      res.json({
+        app: 'hkuf-backbone',
+        status: res.statusCode,
+        payload: {}
+      });
+    } else {
+      res.json({
+        app: 'hkuf-backbone',
+        status: res.statusCode,
+        payload: result
+      });
+    }
   });
 });
 
