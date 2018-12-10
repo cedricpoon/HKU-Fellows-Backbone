@@ -4,7 +4,7 @@ var router = express.Router();
 /* hello world placeholder */
 router.all('/', function(req, res, next) {
 
-  req.db.query("select * from Demo limit 1", function (err, result) {
+  req.db.query("select * from Demo", function (err, result) {
     if (err) {
       console.log(err);
       res.json({
