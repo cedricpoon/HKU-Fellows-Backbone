@@ -1,5 +1,5 @@
 # Follows tutorial on https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
-FROM node:chakracore-10.13.0
+FROM node:latest
 
 # Create app directory
 WORKDIR /usr/src/app
