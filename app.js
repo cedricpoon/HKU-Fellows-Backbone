@@ -38,7 +38,6 @@ app.use(function(err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.json({
-    app: 'hkuf-backbone',
     status: err.status,
     error: err.message
   });
