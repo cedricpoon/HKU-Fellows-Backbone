@@ -34,7 +34,8 @@ app.use((req, res, next) => {
 });
 
 // error handler
-app.use((err, req, res) => {
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
   // render the error page
   res.status(err.status || 500);
   res.json({
