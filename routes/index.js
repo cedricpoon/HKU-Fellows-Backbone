@@ -1,27 +1,27 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
 
-router.route('/').all(function(req, res, next) {
+const router = express.Router();
+
+router.route('/').all((req, res) => {
   res.json({
     status: res.statusCode,
-    payload: 'ಠ___ಠ'
+    payload: 'ಠ___ಠ',
   });
 });
 
 /* RDS connection test */
-router.route('/demo').all(function(req, res, next) {
-
-  req.db.query("select * from Demo", function (err, result) {
+router.route('/demo').all((req, res) => {
+  req.db.query('select * from Demo', (err, result) => {
     if (err) {
       console.log(err);
       res.json({
         status: res.statusCode,
-        payload: []
+        payload: [],
       });
     } else {
       res.json({
         status: res.statusCode,
-        payload: result
+        payload: result,
       });
     }
   });

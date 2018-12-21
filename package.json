@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "npm run credential && npm run server",
+    "test": "eslint .",
     "credential": ". ./scripts/set-credential.sh",
     "server": "node ./bin/www",
     "docker": "npm run build-docker && npm run credential && npm run start-docker && ./scripts/post-docker.sh",
@@ -19,5 +20,10 @@
     "http-errors": "~1.6.2",
     "morgan": "~1.9.0",
     "mysql": "^2.16.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.10.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
   }
 }
