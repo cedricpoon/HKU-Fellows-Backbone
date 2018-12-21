@@ -3,11 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "npm run credential && npm run server",
+    "start": ". ./scripts/set-credential.sh && npm run server",
     "test": "eslint .",
-    "credential": ". ./scripts/set-credential.sh",
     "server": "node ./bin/www",
-    "docker": "npm run build-docker && npm run credential && npm run start-docker && ./scripts/post-docker.sh",
+    "docker": "npm run build-docker && . ./scripts/set-credential.sh && npm run start-docker && ./scripts/post-docker.sh",
     "build-docker": "docker build . -t hkuf-backbone",
     "start-docker": "docker run -e RDS_HOSTNAME -e RDS_USERNAME -e RDS_PASSWORD -p 8080:80 -d hkuf-backbone",
     "remove-docker": "./scripts/remove-docker.sh",
