@@ -1,9 +1,6 @@
-// eslint-disable-next-line prefer-destructuring
-const https = require('follow-redirects').https;
+const { https } = require('follow-redirects');
 
 const querystring = require('querystring');
-
-// const request = require('request');
 
 const urls = require('../moodle/urls');
 
