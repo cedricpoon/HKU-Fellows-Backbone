@@ -4,6 +4,9 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mysql = require('mysql');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./docs/openapi.json');
+
 const indexRouter = require('./routes/index');
 const loginRouter = require('./routes/login');
 const dbConfig = require('./database/config');
@@ -24,6 +27,8 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // pass db connection to request
 app.use((req, res, next) => { req.db = db; next(); });
 

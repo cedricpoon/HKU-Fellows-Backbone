@@ -1,0 +1,61 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "HKU Fellows Backbone",
+		"description": "The RESTful WebAPI of Project HKU Fellows [https://i.cs.hku.hk/fyp/2018/fyp18005/](https://i.cs.hku.hk/fyp/2018/fyp18005/)",
+		"version": "0.0.0 Private"
+	},
+	"servers": [
+		{
+			"url": "https://api.hkufellows.ga/",
+			"description": "Production server located on AWS EC2"
+		}
+	],
+	"paths": {
+		"/": {
+			"get": {
+				"summary": "WebAPI status placeholder",
+				"description": "Provide status of response",
+				"responses": {
+					"200": {
+            "$ref": "#/components/responses/Success-Standard"
+          }
+				}
+			}
+		}
+	},
+  "components": {
+    "responses": {
+      "Success-Standard": {
+        "description": "Return status-payload message",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Standard"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Standard": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "number"
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "array"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

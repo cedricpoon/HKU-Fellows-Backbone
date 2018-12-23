@@ -2,15 +2,17 @@ const express = require('express');
 
 const router = express.Router();
 
-router.route('/').all((req, res) => {
+router.route('/').get((req, res) => {
   res.json({
     status: res.statusCode,
-    payload: 'ಠ___ಠ',
+    payload: {
+      message: 'ಠ___ಠ',
+    },
   });
 });
 
 /* RDS connection test */
-router.route('/demo').all((req, res) => {
+router.route('/demo').get((req, res) => {
   req.db.query('select * from Demo', (err, result) => {
     if (err) {
       console.log(err);
