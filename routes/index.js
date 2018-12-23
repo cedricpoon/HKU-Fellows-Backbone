@@ -1,5 +1,7 @@
 const express = require('express');
 
+const db = require('../database/connect');
+
 const router = express.Router();
 
 router.route('/').get((req, res) => {
@@ -12,21 +14,19 @@ router.route('/').get((req, res) => {
 });
 
 /* RDS connection test */
-router.route('/demo').get((req, res) => {
-  req.db.query('select * from Demo', (err, result) => {
-    if (err) {
-      console.log(err);
-      res.json({
-        status: 500,
-        error: 'RDS not connected',
-      });
-    } else {
-      res.json({
-        status: 200,
-        payload: result,
-      });
-    }
-  });
+router.route('/demo').get(async (req, res) => {
+  try {
+    const result = await db.query('select * from Demo');
+    res.json({
+      status: 200,
+      payload: result,
+    });
+  } catch (err) {
+    res.json({
+      status: 502,
+      error: 'Database connection failure',
+    });
+  }
 });
 
 module.exports = router;

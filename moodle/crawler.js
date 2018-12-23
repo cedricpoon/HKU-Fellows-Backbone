@@ -7,7 +7,7 @@ const {
   moodleDomain,
   servletLoginPath,
   moodleLoginPath,
-} = require('../moodle/urls');
+} = require('./urls');
 
 const { parseTicket, extractDomainCookies, lookupLoginPattern } = require('./helper');
 

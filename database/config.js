@@ -4,4 +4,5 @@ module.exports = {
   password: process.env.RDS_PASSWORD,
   port: 3306,
   database: 'hkufdb',
+  connectionLimit: 60, // t2.micro max = 66
 };

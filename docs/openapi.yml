@@ -8,11 +8,16 @@ servers:
   description: Local server by `npm start` or `npm run docker`
 - url: https://api.hkufellows.ga
   description: Production server located on AWS EC2
+tags:
+  - name: Miscellaneous
+    description: Common routes from `index.js`
 paths:
   /:
     get:
       summary: WebAPI status placeholder
-      description: Not useful excepts proofing the WebAPI server is running
+      description: Not useful excepts proving the WebAPI server is running
+      tags:
+        - Miscellaneous
       responses:
         200:
           $ref: "#/components/responses/Basic"
@@ -22,9 +27,11 @@ paths:
     get:
       summary: RDS connection status test
       description: Query a record from relation in RDS and return
+      tags:
+        - Miscellaneous
       responses:
         200:
-          description: 200 - Success<br>500 - RDS not connected
+          description: 200 - Success<br>502 - RDS connectivity issue
           content:
             application/json:
               schema:
@@ -36,8 +43,8 @@ paths:
               status: 200
               payload: [{"Message":"Successfully returned from RDS"}]
             Failure:
-              status: 500
-              error: "RDS not connected"
+              status: 502
+              error: "Database connection failure"
 components:
   responses:
     Basic:
