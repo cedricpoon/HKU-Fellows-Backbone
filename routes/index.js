@@ -15,12 +15,12 @@ router.route('/demo').all((req, res) => {
     if (err) {
       console.log(err);
       res.json({
-        status: res.statusCode,
-        payload: [],
+        status: 500,
+        error: 'RDS not connected',
       });
     } else {
       res.json({
-        status: res.statusCode,
+        status: 200,
         payload: result,
       });
     }
