@@ -15,6 +15,19 @@ function parseTicket(data) {
   return null;
 }
 
+module.exports.moodle = () => new Promise((resolve, reject) => {
+  const req = https.get(`${urls.moodlePage}`, (res) => {
+    res.setEncoding('utf8');
+    res.on('data', (d) => {
+      resolve(d);
+    });
+  });
+  req.on('error', (e) => {
+    reject(e);
+  });
+  req.end();
+});
+
 module.exports.check = ticket => new Promise((resolve, reject) => {
   const req = https.get(`${urls.moodleLogin}&ticket=${ticket}`, (res) => {
     res.setEncoding('utf8');

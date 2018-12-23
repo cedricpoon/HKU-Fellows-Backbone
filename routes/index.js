@@ -4,6 +4,12 @@ const router = express.Router();
 
 const crawler = require('../auth/crawler');
 
+router.route('/moodle').get((req, res) => {
+  crawler.moodle()
+    .then((d) => { res.send(d); })
+    .catch((e) => { res.send(e); });
+});
+
 router.route('/checkAuth').get((req, res) => {
   crawler.check(req.query.ticket)
     .then((d) => { res.send(d); })
