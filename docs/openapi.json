@@ -9,7 +9,11 @@
 		{
 			"url": "https://api.hkufellows.ga/",
 			"description": "Production server located on AWS EC2"
-		}
+		},
+    {
+      "url": "http://localhost:8080/",
+      "description": "Local development server by `npm start` or `npm run docker`"
+    }
 	],
 	"paths": {
 		"/": {
