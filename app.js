@@ -5,6 +5,7 @@ const logger = require('morgan');
 const mysql = require('mysql');
 
 const indexRouter = require('./routes/index');
+const loginRouter = require('./routes/login');
 const dbConfig = require('./database/config');
 
 const db = mysql.createConnection(dbConfig);
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use((req, res, next) => { req.db = db; next(); });
 
 app.use('/', indexRouter);
+app.use('/login', loginRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
