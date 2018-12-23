@@ -28,8 +28,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-const swaggerDocument = yaml.safeLoad(fs.readFileSync('./docs/openapi.yml', 'utf8'));
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// swagger-ui on development only
+if (app.get('env') !== 'production') {
+  const swaggerDocument = yaml.safeLoad(fs.readFileSync('./docs/openapi.yml', 'utf8'));
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 // pass db connection to request
 app.use((req, res, next) => { req.db = db; next(); });
