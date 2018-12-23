@@ -1,0 +1,85 @@
+openapi: 3.0.0
+info:
+  title: HKU Fellows Backbone
+  description: The RESTful WebAPI of Project HKU Fellows [https://i.cs.hku.hk/fyp/2018/fyp18005/](https://i.cs.hku.hk/fyp/2018/fyp18005/)
+  version: 0.0.0 Private
+servers:
+- url: /
+  description: Local server by `npm start` or `npm run docker`
+- url: https://api.hkufellows.ga
+  description: Production server located on AWS EC2
+paths:
+  /:
+    get:
+      summary: WebAPI status placeholder
+      description: Not useful excepts proofing the WebAPI server is running
+      responses:
+        200:
+          $ref: "#/components/responses/Basic"
+        500:
+          $ref: "#/components/responses/Failure"
+  /demo:
+    get:
+      summary: RDS connection status test
+      description: Query a record from relation in RDS and return
+      responses:
+        200:
+          description: 200 - Success<br>500 - RDS not connected
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Standard-Array"
+                  - $ref: "#/components/schemas/Error"
+          examples:
+            Success:
+              status: 200
+              payload: [{"Message":"Successfully returned from RDS"}]
+            Failure:
+              status: 500
+              error: "RDS not connected"
+components:
+  responses:
+    Basic:
+      description: Return standard message
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/Standard"
+              - $ref: "#/components/schemas/Standard-Array"
+      examples:
+        Standard:
+          status: 200
+          payload: {}
+        Standard-Array:
+          status: 200
+          payload: []
+    Failure:
+      description: Return error message
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Standard:
+      type: object
+      properties:
+        status:
+          type: number
+        payload:
+          type: object
+    Standard-Array:
+      type: object
+      properties:
+        status:
+          type: number
+        payload:
+          type: array
+    Error:
+      type: object
+      properties:
+        status:
+          type: number
+        error:
+          type: string
