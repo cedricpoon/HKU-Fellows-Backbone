@@ -3,6 +3,9 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const mysql = require('mysql');
+const yaml = require('js-yaml');
+const fs = require('fs');
+const swaggerUi = require('swagger-ui-express');
 
 const indexRouter = require('./routes/index');
 const loginRouter = require('./routes/login');
@@ -24,6 +27,13 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// swagger-ui on development only
+if (app.get('env') !== 'production') {
+  const swaggerDocument = yaml.safeLoad(fs.readFileSync('./docs/openapi.yml', 'utf8'));
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
+
 // pass db connection to request
 app.use((req, res, next) => { req.db = db; next(); });
 

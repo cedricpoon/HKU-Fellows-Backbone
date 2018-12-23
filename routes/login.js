@@ -12,7 +12,9 @@ router.route('/validate').post((req, res) => {
       .then((isLoggedIn) => {
         res.json({
           status: 200,
-          isValid: isLoggedIn,
+          payload: {
+            isValid: isLoggedIn,
+          },
         });
       })
       .catch(() => {
@@ -38,7 +40,9 @@ router.route('/').post((req, res) => {
       .then(({ cookieString }) => {
         res.json({
           status: 200,
-          payload: cookieString,
+          payload: {
+            authCookie: cookieString,
+          },
         });
       })
       .catch((error) => {
