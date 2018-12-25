@@ -8,23 +8,103 @@ servers:
   description: Local server by `npm start` or `npm run docker`
 - url: https://api.hkufellows.ga
   description: Production server located on AWS EC2
+tags:
+  - name: Miscellaneous
+    description: Common routes from `index.js`
+  - name: Authentication
+    description: Login related routes from `login.js`
 paths:
+  /login/validate:
+    post:
+      summary: Validate the `authCookie` in Moodle
+      description: Since `authCookie` may expire as being a cookie, this route helps checking its accessibility.
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                authCookie:
+                  $ref: "#/components/schemas/authCookie"
+      responses:
+        200:
+          description: 200 - Success<br>422 - Parameter mismatched<br>500 - Unknown error
+          content:
+            application/json:
+              schema:
+                properties:
+                  isValid:
+                    type: boolean
+                    description: Flag showing the usability of authCookie in accessing Moodle
+          examples:
+            Success:
+              status: 200
+              payload: {"isValid":true}
+            Failure:
+              status: 500
+              error: "Unknown error"
+  /login/passphrase:
+    post:
+      summary: Login using username and encrypted password
+      description: Login behavior using username and password. An authentication cookie string for crawling with encrypted password and unique token will be returned.
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                passphrase:
+                  $ref: "#/components/schemas/passphrase"
+      responses:
+        200:
+          $ref: "#/components/responses/Login"
+  /login/password:
+    post:
+      summary: Login using username and plaintext password
+      description: Login behavior using username and password. An authentication cookie string for crawling with encrypted password and unique token will be returned.
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                  username:
+                    $ref: "#/components/schemas/username"
+                  password:
+                    type: string
+                    format: password
+                    description: Password of HKU Portal
+      responses:
+        200:
+          $ref: "#/components/responses/Login"
   /:
     get:
       summary: WebAPI status placeholder
-      description: Not useful excepts proofing the WebAPI server is running
+      description: Not useful excepts proving the WebAPI server is running
+      tags:
+        - Miscellaneous
       responses:
         200:
           $ref: "#/components/responses/Basic"
         500:
           $ref: "#/components/responses/Failure"
-  /demo:
+  /database:
     get:
       summary: RDS connection status test
       description: Query a record from relation in RDS and return
+      tags:
+        - Miscellaneous
       responses:
         200:
-          description: 200 - Success<br>500 - RDS not connected
+          description: 200 - Success<br>502 - RDS connectivity issue
           content:
             application/json:
               schema:
@@ -36,10 +116,29 @@ paths:
               status: 200
               payload: [{"Message":"Successfully returned from RDS"}]
             Failure:
-              status: 500
-              error: "RDS not connected"
+              status: 502
+              error: "Database connection failure"
 components:
   responses:
+    Login:
+      description: 200 - Success<br>502 - RDS connectivity issue<br>401 - Username / Password mismatched<br>421 - No 2nd / 3rd level login redirect url matched<br>400 - No 2nd / 3rd level login redirect<br>500 - Unknown crawler issue<br>422 - Parameter(s) mismatched
+      content:
+        application/json:
+          schema:
+            properties:
+              authCookie:
+                $ref: "#/components/schemas/authCookie"
+              passphrase:
+                $ref: "#/components/schemas/passphrase"
+              token:
+                $ref: "#/components/schemas/token"
+      examples:
+        Success:
+          status: 200
+          payload: {"authCookie":"********","passphrase":"********","token":"********"}
+        Failure:
+          status: 502
+          error: 'Unauthenticated'
     Basic:
       description: Return standard message
       content:
@@ -62,6 +161,18 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
   schemas:
+    username:
+      type: string
+      description: Username of HKU Portal
+    authCookie:
+      type: string
+      description: Moodle authentication cookie string
+    passphrase:
+      type: string
+      description: Server-side encrypted user password with `CIPER_KEY`. Irregular.
+    token:
+      type: string
+      description: Generated account secret key from `UserId`, `Date` and `CIPER_KEY`
     Standard:
       type: object
       properties:

@@ -1,83 +1,99 @@
 const express = require('express');
 
+const crawler = require('../moodle/crawler');
+const db = require('../database/connect');
+const { decrypt, encrypt, hash } = require('../auth/safe');
+const { responseError, responseSuccess } = require('./helper.js');
+
 const router = express.Router();
 
-const crawler = require('../auth/crawler');
-
-router.route('/validate').post((req, res) => {
-  if (req.body.authCookie) {
-    crawler.visitMoodle({
-      cookieString: req.body.authCookie,
-    })
-      .then((isLoggedIn) => {
-        res.json({
-          status: 200,
-          payload: {
-            isValid: isLoggedIn,
-          },
-        });
-      })
-      .catch(() => {
-        res.json({
-          status: 500,
-          error: 'crawling error',
-        });
-      });
-  } else {
-    res.json({
-      status: 422,
-      error: 'malformed request',
-    });
-  }
-});
-
-router.route('/').post((req, res) => {
-  if (req.body.username && req.body.password) {
-    crawler.login({
-      username: req.body.username,
-      password: req.body.password,
-    })
-      .then(({ cookieString }) => {
-        res.json({
-          status: 200,
-          payload: {
+const loginCallback = ({ username, password, response }) => {
+  if (username && password) {
+    // crawling login
+    crawler.login({ username, password })
+      .then(async ({ cookieString }) => {
+        try {
+          // check if db contains user
+          const result = await db.query({
+            sql: 'select Token from User where UserId = ?',
+            values: [username],
+          });
+          let token = result.length === 0 ? '' : result[0].Token;
+          if (result.length === 0) {
+            // create new user
+            token = hash(`${username};${new Date()}`);
+            await db.query(
+              'insert into User set ?',
+              { UserId: username, Token: token },
+            );
+          }
+          responseSuccess({
             authCookie: cookieString,
-          },
-        });
+            passphrase: encrypt(password),
+            token,
+          }, response);
+        } catch (err) {
+          responseError(502, response);
+        }
       })
       .catch((error) => {
         switch (error.message) {
           case 'unauthenticated':
-            res.json({
-              status: 401,
-              error: error.message,
-            });
+            responseError(401, response);
             break;
           case 'loginMoodle-err1':
-            res.json({
-              status: 421,
-              error: 'crawling error',
-            });
+            responseError(421, response);
             break;
           case 'loginMoodle-err2':
-            res.json({
-              status: 400,
-              error: 'crawling error',
-            });
+            responseError(400, response);
             break;
           default:
-            res.json({
-              status: 500,
-              error: 'crawling error',
-            });
+            responseError(500, response);
         }
       });
   } else {
-    res.json({
-      status: 422,
-      error: 'malformed request',
-    });
+    responseError(422, response);
   }
+};
+
+router.route('/validate').post((req, res) => {
+  if (req.body.authCookie) {
+    crawler.proveLogin({
+      cookieString: req.body.authCookie,
+    })
+      .then((isLoggedIn) => {
+        responseSuccess({
+          isValid: isLoggedIn,
+        }, res);
+      })
+      .catch(() => {
+        responseError(500, res);
+      });
+  } else {
+    responseError(422, res);
+  }
+});
+
+router.route('/passphrase').post((req, res) => {
+  const { username, passphrase } = req.body;
+  const password = decrypt(passphrase);
+  // actual login with decrypting passphrase
+  loginCallback({
+    username,
+    // 1 char for returning unauthenticated
+    password: password === '' ? ' ' : password,
+    response: res,
+  });
+});
+
+router.route('/password').post((req, res) => {
+  const { username, password } = req.body;
+  // actual login with password
+  loginCallback({
+    username,
+    password,
+    response: res,
+  });
 });
 
 module.exports = router;
