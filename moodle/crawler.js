@@ -29,7 +29,7 @@ const visitMoodle = ({ cookieString }) => new Promise((resolve, reject) => {
     });
 
     res.on('end', () => {
-      resolve(lookupLoginPattern(chunks));
+      resolve(chunks);
     });
   });
 
@@ -38,6 +38,16 @@ const visitMoodle = ({ cookieString }) => new Promise((resolve, reject) => {
   });
 
   req.end();
+});
+
+const proveLogin = ({ cookieString }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString })
+    .then((context) => {
+      resolve(lookupLoginPattern(context));
+    })
+    .catch((e) => {
+      reject(e);
+    });
 });
 
 const loginMoodle = ({ queryString, cookieString }) => new Promise((resolve, reject) => {
@@ -166,4 +176,5 @@ const login = ({ username, password }) => new Promise((resolve, reject) => {
 module.exports = {
   login,
   visitMoodle,
+  proveLogin,
 };

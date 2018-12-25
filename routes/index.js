@@ -1,6 +1,7 @@
 const express = require('express');
 
 const db = require('../database/connect');
+const { responseError, responseSuccess } = require('./helper.js');
 
 const router = express.Router();
 
@@ -14,18 +15,12 @@ router.route('/').get((req, res) => {
 });
 
 /* RDS connection test */
-router.route('/demo').get(async (req, res) => {
+router.route('/database').get(async (req, res) => {
   try {
     const result = await db.query('select * from Demo');
-    res.json({
-      status: 200,
-      payload: result,
-    });
+    responseSuccess(result, res);
   } catch (err) {
-    res.json({
-      status: 502,
-      error: 'Database connection failure',
-    });
+    responseError(502, res);
   }
 });
 
