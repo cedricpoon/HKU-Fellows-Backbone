@@ -16,8 +16,8 @@ tags:
 paths:
   /login/validate:
     post:
-      summary: Validate the `authCookie` in Moodle
-      description: Since `authCookie` may expire as being a cookie, this route helps checking its accessibility.
+      summary: Validate the `moodleKey` in Moodle
+      description: Since `moodleKey` may expire as being a cookie, this route helps checking its accessibility.
       tags:
         - Authentication
       requestBody:
@@ -26,8 +26,8 @@ paths:
             schema:
               type: object
               properties:
-                authCookie:
-                  $ref: "#/components/schemas/authCookie"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
       responses:
         200:
           description: 200 - Success<br>422 - Parameter mismatched<br>500 - Unknown error
@@ -37,7 +37,7 @@ paths:
                 properties:
                   isValid:
                     type: boolean
-                    description: Flag showing the usability of authCookie in accessing Moodle
+                    description: Flag showing the usability of moodleKey in accessing Moodle
           examples:
             Success:
               status: 200
@@ -126,8 +126,8 @@ components:
         application/json:
           schema:
             properties:
-              authCookie:
-                $ref: "#/components/schemas/authCookie"
+              moodleKey:
+                $ref: "#/components/schemas/moodleKey"
               passphrase:
                 $ref: "#/components/schemas/passphrase"
               token:
@@ -135,7 +135,7 @@ components:
       examples:
         Success:
           status: 200
-          payload: {"authCookie":"********","passphrase":"********","token":"********"}
+          payload: {"moodleKey":"********","passphrase":"********","token":"********"}
         Failure:
           status: 502
           error: 'Unauthenticated'
@@ -164,9 +164,9 @@ components:
     username:
       type: string
       description: Username of HKU Portal
-    authCookie:
+    moodleKey:
       type: string
-      description: Moodle authentication cookie string
+      description: Server-side encrypted Moodle authentication cookie string
     passphrase:
       type: string
       description: Server-side encrypted user password with `CIPER_KEY`. Irregular.

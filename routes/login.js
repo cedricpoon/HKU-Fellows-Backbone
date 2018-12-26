@@ -28,7 +28,7 @@ const loginCallback = ({ username, password, response }) => {
             );
           }
           responseSuccess({
-            authCookie: cookieString,
+            moodleKey: encrypt(cookieString),
             passphrase: encrypt(password),
             token,
           }, response);
@@ -57,9 +57,9 @@ const loginCallback = ({ username, password, response }) => {
 };
 
 router.route('/validate').post((req, res) => {
-  if (req.body.authCookie) {
+  if (req.body.moodleKey) {
     crawler.proveLogin({
-      cookieString: req.body.authCookie,
+      cookieString: decrypt(req.body.moodleKey),
     })
       .then((isLoggedIn) => {
         responseSuccess({
