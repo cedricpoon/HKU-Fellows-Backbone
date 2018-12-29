@@ -9,7 +9,7 @@ function responseError(code, response) {
 
 function responseSuccess(payload, response) {
   response.json({
-    status: 200,
+    status: (payload.length === 0 ? 204 : 200),
     payload,
   });
 }

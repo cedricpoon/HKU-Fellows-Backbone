@@ -1,5 +1,6 @@
 module.exports = {
   200: 'Success',
+  204: 'No Content',
 
   400: 'Crawling error',
   401: 'Unauthenticated',
