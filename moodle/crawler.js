@@ -71,7 +71,9 @@ const loginMoodle = ({ queryString, cookieString }) => new Promise((resolve, rej
           const moodleCookies = extractDomainCookies({
             cookies: redirect.headers['set-cookie'],
           });
-
+          if (moodleCookies === '') {
+            reject(new Error('loginMoodle-err1'));
+          }
           resolve({ cookieString: moodleCookies });
         } else if (i === res.redirects.length - 1) {
           reject(new Error('loginMoodle-err1'));
