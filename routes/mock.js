@@ -2,13 +2,11 @@ const express = require('express');
 
 const crawler = require('../moodle/crawler');
 const db = require('../database/connect');
-// eslint-disable-next-line no-unused-vars
 const { decrypt, encrypt, hash } = require('../auth/safe');
 const { responseError, responseSuccess } = require('./helper.js');
 
 const router = express.Router();
 
-// eslint-disable-next-line no-unused-vars
 const loginCallback = ({ username, password, response }) => {
   if (username && password) {
     // crawling login
@@ -82,11 +80,11 @@ router.route('/post/:code/:index').post(async (req, res) => {
   try {
     console.log(code);
     const result = await db.query(
-      `select * from Post 
+      `select * from Post
       where CourseId='${code.toUpperCase()}'
       LIMIT ${(parseInt(index, 10) - 1) * 20}, 20`,
     );
-    responseSuccess(result, res);
+    responseSuccess(result, res, result.length === 0 ? 204 : 200);
   } catch (err) {
     responseError(502, res);
   }

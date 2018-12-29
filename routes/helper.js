@@ -7,9 +7,9 @@ function responseError(code, response) {
   });
 }
 
-function responseSuccess(payload, response) {
+function responseSuccess(payload, response, status = 200) {
   response.json({
-    status: (payload.length === 0 ? 204 : 200),
+    status,
     payload,
   });
 }
