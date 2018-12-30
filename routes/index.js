@@ -24,9 +24,12 @@ router.route('/database').get(async (req, res) => {
   }
 });
 
-// -----------------------------------------------
+// ----------------------------------------------------------
 //  Example of crawling all posts from a course
-// -----------------------------------------------
+//  !! It takes 4-22 seconds to crawl a course !!
+//
+//  OPTIMIZE: Duration for crawling course with many posts
+// ----------------------------------------------------------
 // router.route('/test/:idx').post((req, res) => {
 //   let courses = [];
 //   let posts = [];
