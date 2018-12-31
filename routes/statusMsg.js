@@ -4,6 +4,7 @@ module.exports = {
 
   400: 'Crawling error',
   401: 'Unauthenticated',
+  408: 'MoodleKey Timeout',
   421: 'Crawling error',
   422: 'Malformed request',
 

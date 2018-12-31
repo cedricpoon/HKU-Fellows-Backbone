@@ -13,7 +13,48 @@ tags:
     description: Common routes from `index.js`
   - name: Authentication
     description: Login related routes from `login.js`
+  - name: Posts
+    description: Post related routes from `post.js`
 paths:
+  /post/{code}/{index}:
+    post:
+      summary: Load posts by course code and index
+      description: Load posts according the course code then return in json format
+      tags:
+        - Posts
+      parameters:
+        - name: code
+          in: path
+          description: Course code
+          required: true
+          schema:
+            type: string
+        - name: index
+          in: path
+          description: Page index of posts returned
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
+      response:
+        200:
+          description: 200 - Success<br>204 - No Content<br>401 - Unauthenticated<br>408 - MoodleKey not valid<br>500 - Unknown error<br>502 - RDS connectivity issue
+          content:
+            application/json:
+              scheme:
+                properties:
+                  id: ...
   /login/validate:
     post:
       summary: Validate the `moodleKey` in Moodle
