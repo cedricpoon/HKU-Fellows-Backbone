@@ -9,6 +9,7 @@ const {
   moodleDomain,
   servletLoginPath,
   moodleLoginPath,
+  moodleForumPostPath,
 } = require('./urls');
 
 const {
@@ -77,7 +78,8 @@ const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) 
 
       $('table.forumheaderlist tbody tr').each((i, post) => {
         posts.push({
-          id: $(post).children('.topic').children('a').attr('href'),
+          id: $(post).children('.topic').children('a').attr('href')
+            .replace(`http://${moodleDomain}${moodleForumPostPath}`, 'mod'),
           native: false,
           timestamp: $(post).children('.lastpost').children('a[href*="discuss.php"]').html(),
           replyNo: $(post).children('.replies').children('a').html(),

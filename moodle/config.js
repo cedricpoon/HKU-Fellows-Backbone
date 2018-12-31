@@ -1,4 +1,5 @@
 module.exports = {
   // delay for faking Moodle server we are humans
-  delay: 100,
+  // use if needed
+  delay: 0,
 };
