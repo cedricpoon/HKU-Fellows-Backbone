@@ -136,7 +136,7 @@ const retrievePostsFromCourse = async ({ cookieString, coursePath }) => {
     // return all posts associated with course
     return [].concat(...posts);
   } catch (e) {
-    throw e;
+    throw new Error('crawling-error');
   }
 };
 

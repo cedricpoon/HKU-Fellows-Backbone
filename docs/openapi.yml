@@ -31,7 +31,7 @@ paths:
             type: string
         - name: index
           in: path
-          description: Page index of posts returned
+          description: Page index of posts returned starting from 1
           required: true
           schema:
             type: integer
@@ -47,14 +47,23 @@ paths:
                   $ref: "#/components/schemas/token"
                 moodleKey:
                   $ref: "#/components/schemas/moodleKey"
-      response:
+      responses:
         200:
-          description: 200 - Success<br>204 - No Content<br>401 - Unauthenticated<br>408 - MoodleKey not valid<br>500 - Unknown error<br>502 - RDS connectivity issue
+          description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue
           content:
             application/json:
-              scheme:
+              schema:
                 properties:
-                  id: ...
+                  payload:
+                    type: list
+                    description: An array of returned posts
+          examples:
+            Success:
+              status: 200
+              payload: [{"id":3,"native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-12-01T16:00:00.000Z","primaryHashtag":"hashtag","replyNo":1},{"id":2,"native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-11-30T16:00:00.000Z","replyNo":0}]
+            Failure:
+              status: 500
+              error: "Unknown error"
   /login/validate:
     post:
       summary: Validate the `moodleKey` in Moodle
