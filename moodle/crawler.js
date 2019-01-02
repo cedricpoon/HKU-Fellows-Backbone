@@ -1,21 +1,30 @@
 const { https, http } = require('follow-redirects');
-
 const querystring = require('querystring');
+const cheerio = require('cheerio');
+
+const { delay } = require('./config');
 
 const {
   portalDomain,
   moodleDomain,
   servletLoginPath,
   moodleLoginPath,
+  moodleForumPostPath,
 } = require('./urls');
 
-const { parseTicket, extractDomainCookies, lookupLoginPattern } = require('./helper');
+const {
+  parseTicket,
+  extractDomainCookies,
+  lookupLoginPattern,
+  extractSlug,
+} = require('./helper');
 
-const visitMoodle = ({ cookieString }) => new Promise((resolve, reject) => {
+const visitMoodle = ({ cookieString, path }) => new Promise((resolve, reject) => {
   const options = {
     hostname: moodleDomain,
     port: 80,
     method: 'GET',
+    path: path || '/',
     headers: {
       Cookie: cookieString,
     },
@@ -39,6 +48,97 @@ const visitMoodle = ({ cookieString }) => new Promise((resolve, reject) => {
 
   req.end();
 });
+
+const getCourses = ({ cookieString }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString })
+    .then((moodle_hku_hk) => {
+      const courses = [];
+      const $ = cheerio.load(moodle_hku_hk);
+
+      $('.type_course a[href][title]').each((i, elem) => {
+        courses.push({
+          id: extractSlug($(elem).html()),
+          title: $(elem).attr('title'),
+          path: $(elem).attr('href').replace(`http://${moodleDomain}`, ''),
+        });
+      });
+
+      resolve(courses);
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString, path: forumPath })
+    .then((moodle_hku_hk_mod_forum) => {
+      const $ = cheerio.load(moodle_hku_hk_mod_forum);
+      const posts = [];
+
+      $('table.forumheaderlist tbody tr').each((i, post) => {
+        posts.push({
+          id: $(post).children('.topic').children('a').attr('href')
+            .replace(`http://${moodleDomain}${moodleForumPostPath}`, 'mod'),
+          native: false,
+          timestamp: $(post).children('.lastpost').children('a[href*="discuss.php"]').html(),
+          replyNo: $(post).children('.replies').children('a').html(),
+          title: $(post).children('.topic').children('a').html(),
+          subTitle: $('div[role="main"] > h2').html(),
+        });
+      });
+
+      setTimeout(() => {
+        resolve(posts);
+      }, delay);
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const getForums = ({ cookieString, coursePath }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString, path: coursePath })
+    .then((moodle_hku_hk_course) => {
+      const forums = [];
+      const $ = cheerio.load(moodle_hku_hk_course);
+
+      $('a[href*="/mod/forum/view.php?id="]').each((i, elem) => {
+        forums.push({
+          description: $($(elem).children('span')).html().replace(/<span.+<\/span>/, ''),
+          path: $(elem).attr('href').replace('http://moodle.hku.hk', ''),
+        });
+      });
+
+      setTimeout(() => {
+        resolve(forums);
+      }, delay);
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const retrievePostsFromCourse = async ({ cookieString, coursePath }) => {
+  const getPostsWrapper = async ({ cs, forumPath }) => getPosts({ cookieString: cs, forumPath });
+
+  try {
+    // get all forums associated with course
+    const forums = await getForums({ cookieString, coursePath });
+
+    const results = [];
+    for (let i = 0; i < forums.length; i += 1) {
+      // get all posts from forums
+      results.push(getPostsWrapper({ cs: cookieString, forumPath: forums[i].path }));
+    }
+    const posts = await Promise.all(results);
+
+    // return all posts associated with course
+    return [].concat(...posts);
+  } catch (e) {
+    throw new Error('crawling-error');
+  }
+};
 
 const proveLogin = ({ cookieString }) => new Promise((resolve, reject) => {
   visitMoodle({ cookieString })
@@ -179,4 +279,6 @@ module.exports = {
   login,
   visitMoodle,
   proveLogin,
+  getCourses,
+  retrievePostsFromCourse,
 };

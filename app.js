@@ -8,6 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 
 const indexRouter = require('./routes/index');
 const loginRouter = require('./routes/login');
+const postRouter = require('./routes/post');
 
 const app = express();
 
@@ -24,6 +25,7 @@ if (app.get('env') !== 'production') {
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
+app.use('/post', postRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
