@@ -29,7 +29,7 @@ router.route('/courses').get(async (req, res) => {
       `);
       for (const dept of depts) {
         const deptObj = {
-          id: dept.FacultyId,
+          id: dept.DepartmentId,
           title: dept.Description,
           links: [], // Department courses
         };
