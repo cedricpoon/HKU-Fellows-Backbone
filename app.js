@@ -6,10 +6,6 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 const swaggerUi = require('swagger-ui-express');
 
-const indexRouter = require('./routes/index');
-const loginRouter = require('./routes/login');
-const postRouter = require('./routes/post');
-
 const app = express();
 
 app.use(logger('dev'));
@@ -23,9 +19,17 @@ if (app.get('env') !== 'production') {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 }
 
-app.use('/', indexRouter);
-app.use('/login', loginRouter);
-app.use('/post', postRouter);
+fs.readdirSync('./routes', { withFileTypes: true })
+  .forEach((file) => {
+    if (!file.isDirectory()) {
+      const name = file.name.replace(/\..+/, ''); // remove extensions
+      // constraint dev only paths
+      if (!file.name.includes('.dev.') || app.get('env') !== 'production') {
+        // eslint-disable-next-line global-require, import/no-dynamic-require
+        app.use(`/${name === 'index' ? '' : name}`, require(`./routes/${file.name}`));
+      }
+    }
+  });
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

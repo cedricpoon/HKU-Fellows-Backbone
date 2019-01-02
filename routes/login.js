@@ -3,7 +3,7 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const db = require('../database/connect');
 const { decrypt, encrypt, hash } = require('../auth/safe');
-const { responseError, responseSuccess } = require('./helper.js');
+const { responseError, responseSuccess } = require('./helper');
 
 const router = express.Router();
 
