@@ -1,7 +1,6 @@
 // -----------------------------------------------------
 // | ALL routes located here are for internal use ONLY |
 // -----------------------------------------------------
-
 const express = require('express');
 
 const db = require('../database/connect');
@@ -48,6 +47,13 @@ router.route('/courses').get(async (req, res) => {
             description: course.Description,
           });
         }
+        // unset empty links
+        if (deptObj.links.length === 0) {
+          delete deptObj.links;
+        } else {
+          // sort links
+          deptObj.links.sort((a, b) => a.id - b.id);
+        }
       }
 
       const courses = await db.query(`
@@ -62,12 +68,26 @@ router.route('/courses').get(async (req, res) => {
           description: course.Description,
         });
       }
+      // unset empty links
+      if (facObj.links.length === 0) {
+        delete facObj.links;
+      } else {
+        // sort links
+        facObj.links.sort((a, b) => a.id - b.id);
+      }
+      // unset empty children
+      if (facObj.children.length === 0) {
+        delete facObj.children;
+      } else {
+        // sort links
+        facObj.children.sort((a, b) => a.id - b.id);
+      }
     }
     /* eslint-disable no-restricted-syntax, no-await-in-loop */
-
     res.json(list);
   } catch (err) {
-    res.send(err);
+    console.log(err);
+    res.send(err.message);
   }
 });
 
