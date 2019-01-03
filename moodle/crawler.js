@@ -1,6 +1,7 @@
 const { https, http } = require('follow-redirects');
 const querystring = require('querystring');
 const cheerio = require('cheerio');
+const decode = require('unescape');
 
 const { delay } = require('./config');
 
@@ -83,8 +84,8 @@ const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) 
           native: false,
           timestamp: $(post).children('.lastpost').children('a[href*="discuss.php"]').html(),
           replyNo: Number($(post).children('.replies').children('a').html()),
-          title: $(post).children('.topic').children('a').html(),
-          subTitle: $('div[role="main"] > h2').html(),
+          title: decode($(post).children('.topic').children('a').html(), 'all'),
+          subTitle: decode($('div[role="main"] > h2').html(), 'all'),
         });
       });
 
