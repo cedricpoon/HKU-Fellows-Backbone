@@ -3,7 +3,7 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const db = require('../database/connect');
 const { decrypt } = require('../auth/safe');
-const { responseError, responseSuccess } = require('./helper.js');
+const { responseError, responseSuccess } = require('./helper');
 
 const router = express.Router();
 
@@ -30,14 +30,13 @@ const getMoodlePosts = async (code, cookieString) => {
   return [];
 };
 
-const getNativePosts = async (code, index) => {
+const getNativePosts = async (code) => {
   try {
     const topic = await db.query(
       `select * from Topic T, Post P
         where T.CourseId='${code.toUpperCase()}'
         and T.PostId = P.PostId
-        order by P.Timestamp DESC
-        LIMIT ${(parseInt(index, 10) - 1) * 20}, 20`,
+        order by P.Timestamp DESC`,
     );
     const resultPosts = [];
     for (let i = 0; i < topic.length; i += 1) {
@@ -84,17 +83,18 @@ router.route('/:code/:index').post(async (req, res) => {
       });
       if (isLoggedIn) {
         // get all moodle posts from course
-        const moodlePosts = await getMoodlePosts(code, cookieString);
+        const moodlePosts = getMoodlePosts(code, cookieString);
         // get all native posts
-        const nativePosts = await getNativePosts(code, index);
+        const nativePosts = getNativePosts(code, index);
         // hybrid sort
-        const posts = nativePosts.concat(moodlePosts).sort((a, b) => {
+        const posts = await Promise.all([moodlePosts, nativePosts]);
+        const result = [].concat(...posts).sort((a, b) => {
           const aTime = new Date(a.timestamp);
           const bTime = new Date(b.timestamp);
 
           return bTime - aTime;
-        });
-        responseSuccess(posts, res, posts.length === 0 ? 204 : 200);
+        }).slice((index - 1) * 20, (index - 1) * 20 + 20);
+        responseSuccess(result, res, result.length === 0 ? 204 : 200);
       } else {
         responseError(408, res);
       }

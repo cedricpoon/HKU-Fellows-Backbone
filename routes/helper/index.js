@@ -1,4 +1,4 @@
-const statusMsg = require('./statusMsg');
+const statusMsg = require('../status/messages');
 
 function responseError(code, response) {
   response.json({
