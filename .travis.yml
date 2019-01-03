@@ -1,7 +1,9 @@
 language: node_js
 
 node_js:
-  - "10.13.0"
+  - "node"
+  _ "iojs"
+  - "11.4.0"
 
 sudo: required
 
