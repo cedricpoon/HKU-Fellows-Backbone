@@ -32,8 +32,18 @@ function lookupLoginPattern(chunks) {
   }
 }
 
+function extractSlug(innerHTML) {
+  try {
+    const a = innerHTML.split('_');
+    return a[0].length === 0 ? a[1] : a[0];
+  } catch (error) {
+    return '';
+  }
+}
+
 module.exports = {
   parseTicket,
   extractDomainCookies,
   lookupLoginPattern,
+  extractSlug,
 };
