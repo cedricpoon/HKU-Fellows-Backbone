@@ -82,12 +82,32 @@ router.route('/:code/:index').post(async (req, res) => {
         cookieString,
       });
       if (isLoggedIn) {
-        // get all moodle posts from course
-        const moodlePosts = getMoodlePosts(code, cookieString);
+        let moodlePosts;
+        if (index === '1') {
+          // get all moodle posts from course
+          moodlePosts = getMoodlePosts(code, cookieString);
+          await cachedb.query(
+            `delete from MoodleCache
+              where UserId = '${username}' and CourseId = '${code.toUpperCase()}'`,
+          );
+          const moodleStr = JSON.stringify(await moodlePosts);
+          await cachedb.query({
+            sql: `insert into MoodleCache(Data, UserId, CourseId)
+                  values (?, ?, ?)`,
+            values: [moodleStr, username, code.toUpperCase()],
+          });
+        } else {
+          moodlePosts = await cachedb.query(
+            `select Data from MoodleCache
+              where UserId = '${username}' and CourseId = '${code.toUpperCase()}'`,
+          );
+          moodlePosts = JSON.parse(moodlePosts[0].Data);
+        }
         // get all native posts
         const nativePosts = getNativePosts(code, index);
         // hybrid sort
         const posts = await Promise.all([moodlePosts, nativePosts]);
+
         const result = [].concat(...posts).sort((a, b) => {
           const aTime = new Date(a.timestamp);
           const bTime = new Date(b.timestamp);
