@@ -1,7 +1,7 @@
 const express = require('express');
 
 const crawler = require('../moodle/crawler');
-const db = require('../database/connect');
+const { db, cachedb } = require('../database/connect');
 const { decrypt } = require('../auth/safe');
 const { responseError, responseSuccess } = require('./helper');
 

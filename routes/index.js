@@ -1,6 +1,6 @@
 const express = require('express');
 
-const db = require('../database/connect');
+const { db } = require('../database/connect');
 const { responseError, responseSuccess } = require('./helper');
 
 const router = express.Router();
