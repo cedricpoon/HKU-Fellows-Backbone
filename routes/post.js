@@ -1,7 +1,7 @@
 const express = require('express');
 
 const crawler = require('../moodle/crawler');
-const { db, cachedb } = require('../database/connect');
+const { db, dbCache } = require('../database/connect');
 const { decrypt } = require('../auth/safe');
 const { responseError, responseSuccess } = require('./helper');
 
@@ -28,6 +28,40 @@ const getMoodlePosts = async (code, cookieString) => {
     }
   }
   return [];
+};
+
+const getCachedMoodlePosts = async (code, cookieString, index, username) => {
+  let moodlePosts;
+
+  if (index === '1') {
+    const promised = await Promise.all([
+      // get all moodle posts from course
+      getMoodlePosts(code, cookieString),
+      dbCache.query({
+        sql: `delete from MoodleCache
+                where UserId = ? and CourseId = ?`,
+        values: [username, code.toUpperCase()],
+      }),
+    ]);
+    [moodlePosts] = promised;
+    const moodleStr = JSON.stringify(moodlePosts);
+    // insert cache
+    await dbCache.query({
+      sql: `insert into MoodleCache(Data, UserId, CourseId)
+            values (?, ?, ?)`,
+      values: [moodleStr, username, code.toUpperCase()],
+    });
+  } else {
+    // get from cache
+    moodlePosts = await dbCache.query({
+      sql: `select Data from MoodleCache
+              where UserId = ? and CourseId = ?`,
+      values: [username, code.toUpperCase()],
+    });
+    moodlePosts = JSON.parse(moodlePosts[0].Data);
+  }
+
+  return moodlePosts;
 };
 
 const getNativePosts = async (code) => {
@@ -82,29 +116,10 @@ router.route('/:code/:index').post(async (req, res) => {
         cookieString,
       });
       if (isLoggedIn) {
-        let moodlePosts;
-        if (index === '1') {
-          // get all moodle posts from course
-          moodlePosts = getMoodlePosts(code, cookieString);
-          await cachedb.query(
-            `delete from MoodleCache
-              where UserId = '${username}' and CourseId = '${code.toUpperCase()}'`,
-          );
-          const moodleStr = JSON.stringify(await moodlePosts);
-          await cachedb.query({
-            sql: `insert into MoodleCache(Data, UserId, CourseId)
-                  values (?, ?, ?)`,
-            values: [moodleStr, username, code.toUpperCase()],
-          });
-        } else {
-          moodlePosts = await cachedb.query(
-            `select Data from MoodleCache
-              where UserId = '${username}' and CourseId = '${code.toUpperCase()}'`,
-          );
-          moodlePosts = JSON.parse(moodlePosts[0].Data);
-        }
+        // get all moodle posts from cache
+        const moodlePosts = getCachedMoodlePosts(code, cookieString, index, username);
         // get all native posts
-        const nativePosts = getNativePosts(code, index);
+        const nativePosts = getNativePosts(code);
         // hybrid sort
         const posts = await Promise.all([moodlePosts, nativePosts]);
 
@@ -120,6 +135,7 @@ router.route('/:code/:index').post(async (req, res) => {
       }
     }
   } catch (err) {
+    console.log(err);
     switch (err.message) {
       case 'database-error':
         responseError(502, res);

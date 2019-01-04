@@ -1,46 +1,33 @@
 const mysql = require('mysql');
 const util = require('util');
 
-const config = require('./config');
+const { config, database, cacheDatabase } = require('./config');
 
-const normalPool = mysql.createPool(config.para('hkufdb'));
-const cachePool = mysql.createPool(config.para('hkufdb_cache'));
+const createPool = (_database) => {
+  const pool = mysql.createPool(config(_database));
 
-normalPool.getConnection((err, connection) => {
-  if (err) {
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      console.error('Database connection was closed.');
+  pool.getConnection((err, connection) => {
+    if (err) {
+      if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        console.error(`Database "${_database}" connection was closed.`);
+      }
+      if (err.code === 'ER_CON_COUNT_ERROR') {
+        console.error(`Database "${_database}" has too many connections.`);
+      }
+      if (err.code === 'ECONNREFUSED') {
+        console.error(`Database "${_database}" connection was refused.`);
+      }
     }
-    if (err.code === 'ER_CON_COUNT_ERROR') {
-      console.error('Database has too many connections.');
+    if (connection) {
+      connection.release();
     }
-    if (err.code === 'ECONNREFUSED') {
-      console.error('Database connection was refused.');
-    }
-  }
-  if (connection) {
-    connection.release();
-  }
-});
+  });
+  pool.query = util.promisify(pool.query);
 
-cachePool.getConnection((err, connection) => {
-  if (err) {
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      console.error('Database connection was closed.');
-    }
-    if (err.code === 'ER_CON_COUNT_ERROR') {
-      console.error('Database has too many connections.');
-    }
-    if (err.code === 'ECONNREFUSED') {
-      console.error('Database connection was refused.');
-    }
-  }
-  if (connection) {
-    connection.release();
-  }
-});
+  return pool;
+};
 
-normalPool.query = util.promisify(normalPool.query);
-cachePool.query = util.promisify(cachePool.query);
-
-module.exports = { db: normalPool, cachedb: cachePool };
+module.exports = {
+  db: createPool(database),
+  dbCache: createPool(cacheDatabase),
+};
