@@ -1,7 +1,6 @@
 const { https, http } = require('follow-redirects');
 const querystring = require('querystring');
 const cheerio = require('cheerio');
-const decode = require('unescape');
 
 const { delay } = require('./config');
 
@@ -54,7 +53,7 @@ const getCourses = ({ cookieString }) => new Promise((resolve, reject) => {
   visitMoodle({ cookieString })
     .then((moodle_hku_hk) => {
       const courses = [];
-      const $ = cheerio.load(moodle_hku_hk);
+      const $ = cheerio.load(moodle_hku_hk, { decodeEntities: false });
 
       $('.type_course a[href][title]').each((i, elem) => {
         courses.push({
@@ -74,7 +73,7 @@ const getCourses = ({ cookieString }) => new Promise((resolve, reject) => {
 const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) => {
   visitMoodle({ cookieString, path: forumPath })
     .then((moodle_hku_hk_mod_forum) => {
-      const $ = cheerio.load(moodle_hku_hk_mod_forum);
+      const $ = cheerio.load(moodle_hku_hk_mod_forum, { decodeEntities: false });
       const posts = [];
 
       $('table.forumheaderlist tbody tr').each((i, post) => {
@@ -84,8 +83,8 @@ const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) 
           native: false,
           timestamp: $(post).children('.lastpost').children('a[href*="discuss.php"]').html(),
           replyNo: Number($(post).children('.replies').children('a').html()),
-          title: decode($(post).children('.topic').children('a').html(), 'all'),
-          subTitle: decode($('div[role="main"] > h2').html(), 'all'),
+          title: $(post).children('.topic').children('a').html(),
+          subTitle: $('div[role="main"] > h2').html(),
         });
       });
 
@@ -102,7 +101,7 @@ const getForums = ({ cookieString, coursePath }) => new Promise((resolve, reject
   visitMoodle({ cookieString, path: coursePath })
     .then((moodle_hku_hk_course) => {
       const forums = [];
-      const $ = cheerio.load(moodle_hku_hk_course);
+      const $ = cheerio.load(moodle_hku_hk_course, { decodeEntities: false });
 
       $('a[href*="/mod/forum/view.php?id="]').each((i, elem) => {
         forums.push({

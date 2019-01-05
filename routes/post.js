@@ -4,6 +4,7 @@ const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../auth/safe');
 const { responseError, responseSuccess, sortByTimestamp } = require('./helper');
+const { postLimitPerLoad } = require('./config');
 
 const router = express.Router();
 
@@ -75,8 +76,13 @@ const getNativePosts = async (code, index, time, offset) => {
               and T.PostId = P.PostId
               and P.Timestamp <= FROM_UNIXTIME(? / 1000)
               order by P.Timestamp DESC
-              limit 20 offset ?`,
-      values: [code.toUpperCase(), time, (parseInt(index, 10) - 1) * 20 - offset],
+              limit ? offset ?`,
+      values: [
+        code.toUpperCase(),
+        time,
+        postLimitPerLoad,
+        (parseInt(index, 10) - 1) * postLimitPerLoad - offset,
+      ],
     });
     const resultPosts = [];
     for (let i = 0; i < topic.length; i += 1) {
@@ -163,7 +169,7 @@ router.route('/:code/:index').post(async (req, res) => {
           // hybrid sort
           const result = nativePosts.concat(
             await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-          ).sort(sortByTimestamp).slice(0, 20);
+          ).sort(sortByTimestamp).slice(0, postLimitPerLoad);
           // update offset
           updateOffset(result, code, username);
           responseSuccess(result, res, result.length === 0 ? 204 : 200);
