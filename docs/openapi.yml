@@ -43,6 +43,12 @@ paths:
       tags:
         - Posts
       parameters:
+        - name: time
+          in: query
+          description: Timestamp
+          required: true
+          schema:
+            type: integer
         - name: code
           in: path
           description: Course code
@@ -69,7 +75,7 @@ paths:
                   $ref: "#/components/schemas/moodleKey"
       responses:
         200:
-          description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue
+          description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue<br>422 - Parameter(s) mismatched<br>401 - Unauthenticated
           content:
             application/json:
               schema:
