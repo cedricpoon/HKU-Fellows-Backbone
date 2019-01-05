@@ -1,9 +1,9 @@
 const express = require('express');
 
 const crawler = require('../moodle/crawler');
-const { db, dbCache } = require('../database/connect');
+const { db } = require('../database/connect');
 const { decrypt } = require('../auth/safe');
-const { responseError, responseSuccess } = require('./helper');
+const { responseError, responseSuccess, sortByTimestamp } = require('./helper');
 
 const router = express.Router();
 
@@ -31,47 +31,53 @@ const getMoodlePosts = async (code, cookieString) => {
 };
 
 const getCachedMoodlePosts = async (code, cookieString, index, username) => {
-  let moodlePosts;
+  const moodlePosts = { offset: 0 };
 
   if (index === '1') {
     const promised = await Promise.all([
       // get all moodle posts from course
       getMoodlePosts(code, cookieString),
-      dbCache.query({
+      db.query({
         sql: `delete from MoodleCache
                 where UserId = ? and CourseId = ?`,
         values: [username, code.toUpperCase()],
       }),
     ]);
-    [moodlePosts] = promised;
-    const moodleStr = JSON.stringify(moodlePosts);
+    [moodlePosts.post] = promised;
+    // sorting
+    moodlePosts.post = moodlePosts.post.sort(sortByTimestamp);
+    const moodleStr = JSON.stringify(moodlePosts.post);
     // insert cache
-    await dbCache.query({
+    await db.query({
       sql: `insert into MoodleCache(Data, UserId, CourseId)
             values (?, ?, ?)`,
       values: [moodleStr, username, code.toUpperCase()],
     });
   } else {
     // get from cache
-    moodlePosts = await dbCache.query({
-      sql: `select Data from MoodleCache
+    const result = await db.query({
+      sql: `select Data, Offset from MoodleCache
               where UserId = ? and CourseId = ?`,
       values: [username, code.toUpperCase()],
     });
-    moodlePosts = JSON.parse(moodlePosts[0].Data);
+    moodlePosts.post = JSON.parse(result[0].Data);
+    moodlePosts.offset = result[0].Offset;
   }
 
   return moodlePosts;
 };
 
-const getNativePosts = async (code) => {
+const getNativePosts = async (code, index, time, offset) => {
   try {
-    const topic = await db.query(
-      `select * from Topic T, Post P
-        where T.CourseId='${code.toUpperCase()}'
-        and T.PostId = P.PostId
-        order by P.Timestamp DESC`,
-    );
+    const topic = await db.query({
+      sql: `select * from Topic T, Post P
+              where T.CourseId = ?
+              and T.PostId = P.PostId
+              and P.Timestamp <= FROM_UNIXTIME(? / 1000)
+              order by P.Timestamp DESC
+              limit 20 offset ?`,
+      values: [code.toUpperCase(), time, (parseInt(index, 10) - 1) * 20 - offset],
+    });
     const resultPosts = [];
     for (let i = 0; i < topic.length; i += 1) {
       const dbobj = topic[i];
@@ -86,7 +92,10 @@ const getNativePosts = async (code) => {
       if (dbobj.PrimaryHashtag) resultobj.primaryHashtag = dbobj.PrimaryHashtag;
       if (dbobj.SecondaryHashtag) resultobj.secondaryHashtag = dbobj.SecondaryHashtag;
       // eslint-disable-next-line no-await-in-loop
-      const reply = await db.query(`select count(*) as count from Reply where TopicId = ${dbobj.TopicId}`);
+      const reply = await db.query({
+        sql: 'select count(*) as count from Reply where TopicId = ?',
+        values: [dbobj.TopicId],
+      });
       resultobj.replyNo = reply[0].count;
       resultPosts.push(resultobj);
     }
@@ -96,55 +105,83 @@ const getNativePosts = async (code) => {
   }
 };
 
+const sliceCachedMoodlePosts = async (array, code, username, number) => {
+  const data = array.slice(number);
+  if (number > 0) {
+    await db.query({
+      sql: `update MoodleCache set Data = ?
+              where UserId = ? and CourseId = ?`,
+      values: [
+        JSON.stringify(data),
+        username,
+        code.toUpperCase(),
+      ],
+    });
+  }
+  return data;
+};
+
+const updateOffset = async (array, code, username) => {
+  const newOffset = array.filter(record => !record.native).length;
+  await db.query({
+    sql: `update MoodleCache set Offset = ?
+            where UserId = ? and CourseId = ?`,
+    values: [newOffset, username, code.toUpperCase()],
+  });
+};
+
 router.route('/:code/:index').post(async (req, res) => {
   const { code, index } = req.params;
   const { username, token, moodleKey } = req.body;
+  const { time } = req.query;
 
-  try {
-    // check username and token are matched
-    const user = await db.query({
-      sql: `select count(*) as count from User
-              where upper(UserId) = ? and Token = ?`,
-      values: [username.toLowerCase(), token],
-    });
-    if (user[0].count === 0) {
-      responseError(401, res);
-    } else {
-      // check moodleKey is valid
-      const cookieString = decrypt(moodleKey);
-      const isLoggedIn = await crawler.proveLogin({
-        cookieString,
+  if (!time) {
+    responseError(422, res);
+  } else {
+    try {
+      // check username and token are matched
+      const user = await db.query({
+        sql: `select count(*) as count from User
+                where upper(UserId) = ? and Token = ?`,
+        values: [username.toLowerCase(), token],
       });
-      if (isLoggedIn) {
-        // get all moodle posts from cache
-        const moodlePosts = getCachedMoodlePosts(code, cookieString, index, username);
-        // get all native posts
-        const nativePosts = getNativePosts(code);
-        // hybrid sort
-        const posts = await Promise.all([moodlePosts, nativePosts]);
-
-        const result = [].concat(...posts).sort((a, b) => {
-          const aTime = new Date(a.timestamp);
-          const bTime = new Date(b.timestamp);
-
-          return bTime - aTime;
-        }).slice((index - 1) * 20, (index - 1) * 20 + 20);
-        responseSuccess(result, res, result.length === 0 ? 204 : 200);
+      if (user[0].count === 0) {
+        responseError(401, res);
       } else {
-        responseError(408, res);
+        // check moodleKey is valid
+        const cookieString = decrypt(moodleKey);
+        const isLoggedIn = await crawler.proveLogin({
+          cookieString,
+        });
+        if (isLoggedIn) {
+          // get all moodle posts from cache
+          const { post: moodlePosts, offset } = await getCachedMoodlePosts(
+            code, cookieString, index, username,
+          );
+          // get all native posts
+          const nativePosts = await getNativePosts(code, index, time, offset);
+          // hybrid sort
+          const result = nativePosts.concat(
+            await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
+          ).sort(sortByTimestamp).slice(0, 20);
+          // update offset
+          updateOffset(result, code, username);
+          responseSuccess(result, res, result.length === 0 ? 204 : 200);
+        } else {
+          responseError(408, res);
+        }
       }
-    }
-  } catch (err) {
-    console.log(err);
-    switch (err.message) {
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'crawling-error':
-        responseError(421, res);
-        break;
-      default:
-        responseError(500, res);
+    } catch (err) {
+      switch (err.message) {
+        case 'database-error':
+          responseError(502, res);
+          break;
+        case 'crawling-error':
+          responseError(421, res);
+          break;
+        default:
+          responseError(500, res);
+      }
     }
   }
 });

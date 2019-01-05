@@ -43,6 +43,12 @@ paths:
       tags:
         - Posts
       parameters:
+        - name: time
+          in: query
+          description: Timestamp
+          required: true
+          schema:
+            type: integer
         - name: code
           in: path
           description: Course code
