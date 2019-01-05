@@ -1,7 +1,7 @@
 const mysql = require('mysql');
 const util = require('util');
 
-const { config, database, cacheDatabase } = require('./config');
+const { config, database } = require('./config');
 
 const createPool = (_database) => {
   const pool = mysql.createPool(config(_database));
@@ -29,5 +29,4 @@ const createPool = (_database) => {
 
 module.exports = {
   db: createPool(database),
-  dbCache: createPool(cacheDatabase),
 };
