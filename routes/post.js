@@ -94,6 +94,7 @@ const getNativePosts = async (code, index, time, offset) => {
         title: dbobj.Title,
         subtitle: dbobj.Subtitle,
         timestamp: dbobj.Timestamp,
+        temperature: 0, // TODO: calculation and update of temperature
       };
       if (dbobj.PrimaryHashtag) resultobj.primaryHashtag = dbobj.PrimaryHashtag;
       if (dbobj.SecondaryHashtag) resultobj.secondaryHashtag = dbobj.SecondaryHashtag;
