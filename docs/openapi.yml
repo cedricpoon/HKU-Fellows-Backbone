@@ -174,7 +174,7 @@ paths:
           $ref: "#/components/responses/Failure"
   /database:
     get:
-      summary: RDS connection status test
+      summary: RDS connection status test, **for internal development ONLY**
       description: Query a record from relation in RDS and return
       tags:
         - Miscellaneous
