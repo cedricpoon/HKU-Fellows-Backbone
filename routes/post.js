@@ -40,7 +40,7 @@ const getCachedMoodlePosts = async (code, cookieString, index, username) => {
       getMoodlePosts(code, cookieString),
       db.query({
         sql: `delete from MoodleCache
-                where UserId = ? and CourseId = ?`,
+                where UserId = ?`,
         values: [username, code.toUpperCase()],
       }),
     ]);
