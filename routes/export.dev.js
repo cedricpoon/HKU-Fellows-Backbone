@@ -23,7 +23,7 @@ const deepLinkToRight = async (left, rightObj, { idName, childrenQuery }) => {
       idName: 'DepartmentId',
       childrenQuery: `
         select * from Department
-          where SchoolId = "${left.DepartmentId}"
+          where SchoolId = "${child.DepartmentId}"
       `,
     });
   }
