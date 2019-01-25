@@ -41,7 +41,7 @@ function decrypt(text) {
 
 function hash(plaintext) {
   try {
-    return crypto.createHash('md5').update(`${plaintext};${CIPHER_KEY}`).digest('hex');
+    return crypto.createHash('sha256').update(`${plaintext};${CIPHER_KEY}`).digest('hex');
   } catch (error) {
     // function failure return empty string
     return '';
