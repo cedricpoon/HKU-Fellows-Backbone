@@ -13,20 +13,12 @@ const loginCallback = ({ username, password, response }) => {
     crawler.login({ username, password })
       .then(async ({ cookieString }) => {
         try {
-          // check if db contains user
-          const result = await db.query({
-            sql: 'select Token from User where UserId = ?',
-            values: [username],
+          const token = hash(`${username};${new Date()}`);
+          await db.query({
+            sql: `insert into User set ?
+                    on duplicate key update Token = ?`,
+            values: [{ UserId: username, Token: token }, token],
           });
-          let token = result.length === 0 ? '' : result[0].Token;
-          if (result.length === 0) {
-            // create new user
-            token = hash(`${username};${new Date()}`);
-            await db.query(
-              'insert into User set ?',
-              { UserId: username, Token: token },
-            );
-          }
           responseSuccess({
             moodleKey: encrypt(cookieString),
             passphrase: encrypt(password),
