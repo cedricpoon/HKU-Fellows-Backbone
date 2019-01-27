@@ -157,8 +157,8 @@ const checkLogin = async (username, token, cookieString) => {
   return 408;
 };
 
-router.route('/view/:post').post(async (req, res) => {
-  const { post } = req.params;
+router.route('/view/:topicId').post(async (req, res) => {
+  const { topicId } = req.params;
   const { username, token, moodleKey } = req.body;
 
   try {
@@ -173,7 +173,7 @@ router.route('/view/:post').post(async (req, res) => {
                 from Topic T
                 join Post as P on T.PostId = P.PostId
                 where T.TopicId = ?`,
-        values: [post],
+        values: [topicId],
       });
       const resTopic = topic[0];
       const resultPosts = [{
@@ -191,7 +191,7 @@ router.route('/view/:post').post(async (req, res) => {
                 join Post as P on R.PostId = P.PostId
                 where T.TopicId = ?
                 order by P.Timestamp asc`,
-        values: [post],
+        values: [topicId],
       });
       for (let i = 0; i < reply.length; i += 1) {
         const dbobj = reply[i];
