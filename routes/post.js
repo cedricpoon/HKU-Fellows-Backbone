@@ -137,6 +137,89 @@ const updateOffset = async (array, code, username) => {
   });
 };
 
+const checkLogin = async (username, token, cookieString) => {
+  // check username and token are matched
+  const user = await db.query({
+    sql: `select count(*) as count from User
+            where upper(UserId) = ? and Token = ?`,
+    values: [username.toLowerCase(), token],
+  });
+  if (user[0].count === 0) {
+    return 401;
+  }
+  // check moodleKey is valid
+  const isLoggedIn = await crawler.proveLogin({
+    cookieString,
+  });
+  if (isLoggedIn) {
+    return 200;
+  }
+  return 408;
+};
+
+router.route('/view/:post').post(async (req, res) => {
+  const { post } = req.params;
+  const { username, token, moodleKey } = req.body;
+
+  try {
+    const cookieString = decrypt(moodleKey);
+    const login = await checkLogin(username, token, cookieString);
+    if (login !== 200) {
+      responseError(login, res);
+    } else {
+      // get native post from database
+      const topic = await db.query({
+        sql: `select P.*
+                from Topic T
+                join Post as P on T.PostId = P.PostId
+                where T.TopicId = ?`,
+        values: [post],
+      });
+      const resTopic = topic[0];
+      const resultPosts = [{
+        id: resTopic.PostId,
+        timestamp: resTopic.Timestamp,
+        temperature: resTopic.Temperature,
+        content: resTopic.Content,
+      }];
+      if (!resTopic.Anonymous) resultPosts[0].author = resTopic.Author;
+      // get native replies
+      const reply = await db.query({
+        sql: `select P.*
+                from Topic T
+                left join Reply as R on T.TopicId = R.TopicId
+                join Post as P on R.PostId = P.PostId
+                where T.TopicId = ?
+                order by P.Timestamp asc`,
+        values: [post],
+      });
+      for (let i = 0; i < reply.length; i += 1) {
+        const dbobj = reply[i];
+        const resultobj = {
+          id: dbobj.PostId,
+          timestamp: dbobj.Timestamp,
+          temperature: dbobj.Temperature,
+          content: dbobj.Content,
+        };
+        if (!dbobj.Anonymous) resultobj.author = dbobj.Author;
+        resultPosts.push(resultobj);
+      }
+      responseSuccess(resultPosts, res);
+    }
+  } catch (err) {
+    switch (err.message) {
+      case 'database-error':
+        responseError(502, res);
+        break;
+      case 'crawling-error':
+        responseError(421, res);
+        break;
+      default:
+        responseError(500, res);
+    }
+  }
+});
+
 router.route('/:code/:index').post(async (req, res) => {
   const { code, index } = req.params;
   const { username, token, moodleKey } = req.body;
@@ -146,37 +229,24 @@ router.route('/:code/:index').post(async (req, res) => {
     responseError(422, res);
   } else {
     try {
-      // check username and token are matched
-      const user = await db.query({
-        sql: `select count(*) as count from User
-                where upper(UserId) = ? and Token = ?`,
-        values: [username.toLowerCase(), token],
-      });
-      if (user[0].count === 0) {
-        responseError(401, res);
+      const cookieString = decrypt(moodleKey);
+      const login = await checkLogin(username, token, cookieString);
+      if (login !== 200) {
+        responseError(login, res);
       } else {
-        // check moodleKey is valid
-        const cookieString = decrypt(moodleKey);
-        const isLoggedIn = await crawler.proveLogin({
-          cookieString,
-        });
-        if (isLoggedIn) {
-          // get all moodle posts from cache
-          const { post: moodlePosts, offset } = await getCachedMoodlePosts(
-            code, cookieString, index, username,
-          );
-          // get all native posts
-          const nativePosts = await getNativePosts(code, index, time, offset);
-          // hybrid sort
-          const result = nativePosts.concat(
-            await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-          ).sort(sortByTimestamp).slice(0, postLimitPerLoad);
-          // update offset
-          updateOffset(result, code, username);
-          responseSuccess(result, res, result.length === 0 ? 204 : 200);
-        } else {
-          responseError(408, res);
-        }
+        // get all moodle posts from cache
+        const { post: moodlePosts, offset } = await getCachedMoodlePosts(
+          code, cookieString, index, username,
+        );
+        // get all native posts
+        const nativePosts = await getNativePosts(code, index, time, offset);
+        // hybrid sort
+        const result = nativePosts.concat(
+          await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
+        ).sort(sortByTimestamp).slice(0, postLimitPerLoad);
+        // update offset
+        updateOffset(result, code, username);
+        responseSuccess(result, res, result.length === 0 ? 204 : 200);
       }
     } catch (err) {
       switch (err.message) {
