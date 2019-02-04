@@ -6,7 +6,7 @@ const { decrypt } = require('../security/safe');
 const { responseError, responseSuccess, sortBy } = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
-const { verifySignIn } = require('./auth');
+const { tokenGateKeeper } = require('./auth');
 
 const router = express.Router();
 
@@ -181,7 +181,7 @@ router.route('/:code/:index').post(async (req, res) => {
   } else {
     try {
       // check username and token are matched
-      await verifySignIn({ userId: username, token });
+      await tokenGateKeeper({ userId: username, token });
       // check moodleKey is valid
       const cookieString = decrypt(moodleKey);
       const isLoggedIn = await crawler.proveLogin({

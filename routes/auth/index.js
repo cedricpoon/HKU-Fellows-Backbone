@@ -1,6 +1,6 @@
 const { db } = require('../../database/connect');
 
-async function verifySignIn({ userId, token }) {
+async function tokenGateKeeper({ userId, token }) {
   // check username and token are matched
   const user = await db.query({
     sql: `select count(*) as count from User
@@ -12,4 +12,4 @@ async function verifySignIn({ userId, token }) {
   }
 }
 
-module.exports = { verifySignIn };
+module.exports = { tokenGateKeeper };
