@@ -2,10 +2,11 @@ const express = require('express');
 
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
-const { decrypt } = require('../auth/safe');
+const { decrypt } = require('../security/safe');
 const { responseError, responseSuccess, sortBy } = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
+const { verifySignIn } = require('./auth');
 
 const router = express.Router();
 
@@ -180,38 +181,30 @@ router.route('/:code/:index').post(async (req, res) => {
   } else {
     try {
       // check username and token are matched
-      const user = await db.query({
-        sql: `select count(*) as count from User
-                where upper(UserId) = ? and Token = ?`,
-        values: [username.toLowerCase(), token],
+      await verifySignIn({ userId: username, token });
+      // check moodleKey is valid
+      const cookieString = decrypt(moodleKey);
+      const isLoggedIn = await crawler.proveLogin({
+        cookieString,
       });
-      if (user[0].count === 0) {
-        responseError(401, res);
+      if (isLoggedIn) {
+        // get all moodle posts from cache
+        const { post: moodlePosts, offset } = await getCachedMoodlePosts(
+          code, cookieString, index, username, filter,
+        );
+        // get all native posts
+        const nativePosts = await getNativePosts(code, index, time, offset, filter);
+        // hybrid sort
+        const result = nativePosts.concat(
+          await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
+        )
+          .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
+          .slice(0, postLimitPerLoad);
+        // update offset
+        updateOffset(result, code, username);
+        responseSuccess(result, res, result.length === 0 ? 204 : 200);
       } else {
-        // check moodleKey is valid
-        const cookieString = decrypt(moodleKey);
-        const isLoggedIn = await crawler.proveLogin({
-          cookieString,
-        });
-        if (isLoggedIn) {
-          // get all moodle posts from cache
-          const { post: moodlePosts, offset } = await getCachedMoodlePosts(
-            code, cookieString, index, username, filter,
-          );
-          // get all native posts
-          const nativePosts = await getNativePosts(code, index, time, offset, filter);
-          // hybrid sort
-          const result = nativePosts.concat(
-            await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-          )
-            .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
-            .slice(0, postLimitPerLoad);
-          // update offset
-          updateOffset(result, code, username);
-          responseSuccess(result, res, result.length === 0 ? 204 : 200);
-        } else {
-          responseError(408, res);
-        }
+        responseError(408, res);
       }
     } catch (err) {
       switch (err.message) {
@@ -220,6 +213,9 @@ router.route('/:code/:index').post(async (req, res) => {
           break;
         case 'crawling-error':
           responseError(421, res);
+          break;
+        case 'login-error':
+          responseError(401, res);
           break;
         default:
           responseError(500, res);
