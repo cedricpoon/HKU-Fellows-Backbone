@@ -3,8 +3,9 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../auth/safe');
-const { responseError, responseSuccess, sortByTimestamp } = require('./helper');
+const { responseError, responseSuccess, sortBy } = require('./helper');
 const { postLimitPerLoad } = require('./config');
+const filterMode = require('../constant/filter');
 
 const router = express.Router();
 
@@ -31,8 +32,11 @@ const getMoodlePosts = async (code, cookieString) => {
   return [];
 };
 
-const getCachedMoodlePosts = async (code, cookieString, index, username) => {
+const getCachedMoodlePosts = async (code, cookieString, index, username, filter) => {
   const moodlePosts = { offset: 0 };
+
+  // return empty array if temperature (native ONLY)
+  if (filter === filterMode.TEMPERATURE) return { ...moodlePosts, post: [] };
 
   if (index === '1') {
     const promised = await Promise.all([
@@ -46,7 +50,13 @@ const getCachedMoodlePosts = async (code, cookieString, index, username) => {
     ]);
     [moodlePosts.post] = promised;
     // sorting
-    moodlePosts.post = moodlePosts.post.sort(sortByTimestamp);
+    switch (filter) {
+      case filterMode.REPLIES:
+        moodlePosts.post = moodlePosts.post.sort(sortBy.replies);
+        break;
+      default: // Sory by timestamp
+        moodlePosts.post = moodlePosts.post.sort(sortBy.timestamp);
+    }
     const moodleStr = JSON.stringify(moodlePosts.post);
     // insert cache
     await db.query({
@@ -68,15 +78,41 @@ const getCachedMoodlePosts = async (code, cookieString, index, username) => {
   return moodlePosts;
 };
 
-const getNativePosts = async (code, index, time, offset) => {
+const getNativePosts = async (code, index, time, offset, filter) => {
+  // return empty array if moodle post ONLY
+  if (filter === filterMode.MOODLE) return [];
+  let orderBy;
+  switch (filter) {
+    case filterMode.TIMESTAMP:
+      orderBy = 'Temperature';
+      break;
+    case filterMode.REPLIES:
+      orderBy = 'ReplyNo';
+      break;
+    default:
+      orderBy = 'Timestamp';
+  }
   try {
     const topic = await db.query({
-      sql: `select * from Topic T, Post P
-              where T.CourseId = ?
-              and T.PostId = P.PostId
-              and P.Timestamp <= FROM_UNIXTIME(? / 1000)
-              order by P.Timestamp DESC
-              limit ? offset ?`,
+      sql: `
+        select
+          T.TopicId as TopicId,
+          Solved,
+          Title,
+          Subtitle,
+          Timestamp,
+          Temperature,
+          PrimaryHashtag,
+          SecondaryHashtag,
+          sum(case when T.TopicId = R.TopicId then 1 else 0 end) as ReplyNo
+        from Topic T, Post P, Reply R
+          where T.CourseId = ?
+            and T.PostId = P.PostId
+            and P.Timestamp <= FROM_UNIXTIME(? / 1000)
+          group by T.TopicId
+          order by ${orderBy} DESC
+          limit ? offset ?
+      `,
       values: [
         code.toUpperCase(),
         time,
@@ -94,16 +130,11 @@ const getNativePosts = async (code, index, time, offset) => {
         title: dbobj.Title,
         subtitle: dbobj.Subtitle,
         timestamp: dbobj.Timestamp,
-        temperature: 0, // TODO: calculation and update of temperature
+        temperature: dbobj.Temperature,
       };
       if (dbobj.PrimaryHashtag) resultobj.primaryHashtag = dbobj.PrimaryHashtag;
       if (dbobj.SecondaryHashtag) resultobj.secondaryHashtag = dbobj.SecondaryHashtag;
-      // eslint-disable-next-line no-await-in-loop
-      const reply = await db.query({
-        sql: 'select count(*) as count from Reply where TopicId = ?',
-        values: [dbobj.TopicId],
-      });
-      resultobj.replyNo = reply[0].count;
+      resultobj.replyNo = dbobj.ReplyNo;
       resultPosts.push(resultobj);
     }
     return resultPosts;
@@ -140,7 +171,9 @@ const updateOffset = async (array, code, username) => {
 router.route('/:code/:index').post(async (req, res) => {
   const { code, index } = req.params;
   const { username, token, moodleKey } = req.body;
-  const { time } = req.query;
+  const { time, filter: _filter } = req.query;
+
+  const filter = _filter ? parseInt(_filter, 10) : filterMode.TIMESTAMP;
 
   if (!time) {
     responseError(422, res);
@@ -163,14 +196,16 @@ router.route('/:code/:index').post(async (req, res) => {
         if (isLoggedIn) {
           // get all moodle posts from cache
           const { post: moodlePosts, offset } = await getCachedMoodlePosts(
-            code, cookieString, index, username,
+            code, cookieString, index, username, filter,
           );
           // get all native posts
-          const nativePosts = await getNativePosts(code, index, time, offset);
+          const nativePosts = await getNativePosts(code, index, time, offset, filter);
           // hybrid sort
           const result = nativePosts.concat(
             await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-          ).sort(sortByTimestamp).slice(0, postLimitPerLoad);
+          )
+            .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
+            .slice(0, postLimitPerLoad);
           // update offset
           updateOffset(result, code, username);
           responseSuccess(result, res, result.length === 0 ? 204 : 200);

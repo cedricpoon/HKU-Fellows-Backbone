@@ -43,6 +43,12 @@ paths:
       tags:
         - Posts
       parameters:
+        - name: filter
+          in: query
+          description: 0 - Moodle, 1 - Timestamp, 2 - Replies, 3 - Temperature
+          required: false
+          schema:
+            type: integer
         - name: time
           in: query
           description: Timestamp

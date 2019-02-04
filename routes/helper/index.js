@@ -21,8 +21,18 @@ function sortByTimestamp(a, b) {
   return bTime - aTime;
 }
 
+function sortByReplies(a, b) {
+  const aTime = new Date(a.replyNo);
+  const bTime = new Date(b.replyNo);
+
+  return bTime - aTime;
+}
+
 module.exports = {
   responseError,
   responseSuccess,
-  sortByTimestamp,
+  sortBy: {
+    timestamp: sortByTimestamp,
+    replies: sortByReplies,
+  },
 };
