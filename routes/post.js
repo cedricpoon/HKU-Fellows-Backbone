@@ -3,10 +3,15 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../security/safe');
-const { responseError, responseSuccess, sortBy } = require('./helper');
+const {
+  responseError,
+  responseSuccess,
+  sortBy,
+  filter: filterer,
+} = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
-const { tokenGateKeeper } = require('./auth');
+const { tokenGatekeeper } = require('./auth');
 
 const router = express.Router();
 
@@ -33,7 +38,7 @@ const getMoodlePosts = async (code, cookieString) => {
   return [];
 };
 
-const getCachedMoodlePosts = async (code, cookieString, index, username, filter) => {
+const getCachedMoodlePosts = async (code, cookieString, index, username, filter, query) => {
   const moodlePosts = { offset: 0 };
 
   // return empty array if temperature (native ONLY)
@@ -58,6 +63,8 @@ const getCachedMoodlePosts = async (code, cookieString, index, username, filter)
       default: // Sory by timestamp
         moodlePosts.post = moodlePosts.post.sort(sortBy.timestamp);
     }
+    // searching
+    moodlePosts.post = filterer.title(moodlePosts.post, query);
     const moodleStr = JSON.stringify(moodlePosts.post);
     // insert cache
     await db.query({
@@ -79,7 +86,7 @@ const getCachedMoodlePosts = async (code, cookieString, index, username, filter)
   return moodlePosts;
 };
 
-const getNativePosts = async (code, index, time, offset, filter) => {
+const getNativePosts = async (code, index, time, offset, filter, query, hashtag) => {
   // return empty array if moodle post ONLY
   if (filter === filterMode.MOODLE) return [];
   let orderBy;
@@ -110,6 +117,11 @@ const getNativePosts = async (code, index, time, offset, filter) => {
           where T.CourseId = ?
             and T.PostId = P.PostId
             and P.Timestamp <= FROM_UNIXTIME(? / 1000)
+            and (Title like ? or Subtitle like ?)
+            and (
+              (PrimaryHashtag like ? or isNull(PrimaryHashtag)) and
+              (SecondaryHashtag like ? or isNull(SecondaryHashtag))
+            )
           group by T.TopicId
           order by ${orderBy} DESC
           limit ? offset ?
@@ -117,6 +129,8 @@ const getNativePosts = async (code, index, time, offset, filter) => {
       values: [
         code.toUpperCase(),
         time,
+        `%${query}%`, `%${query}%`, // title subtitle
+        `%${hashtag.primary || ''}%`, `%${hashtag.secondary || ''}%`, // hashtags
         postLimitPerLoad,
         (parseInt(index, 10) - 1) * postLimitPerLoad - offset,
       ],
@@ -171,17 +185,25 @@ const updateOffset = async (array, code, username) => {
 
 router.route('/:code/:index').post(async (req, res) => {
   const { code, index } = req.params;
-  const { username, token, moodleKey } = req.body;
   const { time, filter: _filter } = req.query;
+  const {
+    username,
+    token,
+    moodleKey,
+    query: _query,
+    hashtag: _hashtag,
+  } = req.body;
 
+  const query = _query ? decodeURI(_query) : '';
   const filter = _filter ? parseInt(_filter, 10) : filterMode.TIMESTAMP;
+  const hashtag = _hashtag ? JSON.parse(_hashtag) : null;
 
   if (!time) {
     responseError(422, res);
   } else {
     try {
       // check username and token are matched
-      await tokenGateKeeper({ userId: username, token });
+      await tokenGatekeeper({ userId: username, token });
       // check moodleKey is valid
       const cookieString = decrypt(moodleKey);
       const isLoggedIn = await crawler.proveLogin({
@@ -189,11 +211,14 @@ router.route('/:code/:index').post(async (req, res) => {
       });
       if (isLoggedIn) {
         // get all moodle posts from cache
-        const { post: moodlePosts, offset } = await getCachedMoodlePosts(
-          code, cookieString, index, username, filter,
-        );
+        const { post: moodlePosts, offset } = hashtag
+          ? { post: [], offset: 0 } : await getCachedMoodlePosts(
+            code, cookieString, index, username, filter, query,
+          );
         // get all native posts
-        const nativePosts = await getNativePosts(code, index, time, offset, filter);
+        const nativePosts = await getNativePosts(
+          code, index, time, offset, filter, query, hashtag || {},
+        );
         // hybrid sort
         const result = nativePosts.concat(
           await sliceCachedMoodlePosts(moodlePosts, code, username, offset),

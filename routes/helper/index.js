@@ -14,6 +14,14 @@ function responseSuccess(payload, response, status = 200) {
   });
 }
 
+function genericFilter(array, searchKey) {
+  return array.filter(obj => Object.keys(obj).some(key => obj[key].includes(searchKey)));
+}
+
+function titleFilter(array, searchKey) {
+  return array.filter(obj => obj.title.includes(searchKey) || obj.subtitle.includes(searchKey));
+}
+
 function sortByTimestamp(a, b) {
   const aTime = new Date(a.timestamp);
   const bTime = new Date(b.timestamp);
@@ -34,5 +42,9 @@ module.exports = {
   sortBy: {
     timestamp: sortByTimestamp,
     replies: sortByReplies,
+  },
+  filter: {
+    generic: genericFilter,
+    title: titleFilter,
   },
 };
