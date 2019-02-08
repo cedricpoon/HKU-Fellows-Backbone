@@ -196,7 +196,7 @@ router.route('/:code/:index').post(async (req, res) => {
 
   const query = _query ? decodeURI(_query) : '';
   const filter = _filter ? parseInt(_filter, 10) : filterMode.TIMESTAMP;
-  const hashtag = _hashtag ? JSON.parse(_hashtag) : null;
+  const hashtag = _hashtag || null;
 
   if (!time) {
     responseError(422, res);
