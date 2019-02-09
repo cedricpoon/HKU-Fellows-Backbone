@@ -14,7 +14,11 @@ const insertNativePost = async (postData) => {
   const currentTime = Date.now();
   const topicId = hash(`Topic${title}${currentTime}`);
   const postId = hash(title + currentTime);
+
   try {
+    if (parseInt(anonymous, 10) !== 1 && parseInt(anonymous, 10) !== 0) {
+      throw new Error('parameter-error');
+    }
     await db.query({
       sql: `insert into Post (PostId, Content, Author, Anonymous)
             values (?, ?, ?, ?)`,
@@ -22,7 +26,7 @@ const insertNativePost = async (postData) => {
         postId,
         content,
         username,
-        anonymous ? 1 : 0,
+        anonymous === '1' ? 1 : 0,
       ],
     });
     await db.query({
@@ -43,6 +47,9 @@ const insertNativePost = async (postData) => {
       topicId, title, subtitle, native: true,
     };
   } catch (e) {
+    if (e.message === 'parameter-error') {
+      throw new Error(e.message);
+    }
     throw new Error('database-error');
   }
 };
@@ -69,6 +76,9 @@ router.route('/:code').post(async (req, res) => {
     }
   } catch (err) {
     switch (err.message) {
+      case 'parameter-error':
+        responseError(422, res);
+        break;
       case 'database-error':
         responseError(502, res);
         break;
