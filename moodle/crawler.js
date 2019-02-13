@@ -10,6 +10,7 @@ const {
   servletLoginPath,
   moodleLoginPath,
   moodleForumPostPath,
+  moodleForumPostPathMode1,
 } = require('./urls');
 
 const {
@@ -47,6 +48,30 @@ const visitMoodle = ({ cookieString, path }) => new Promise((resolve, reject) =>
   });
 
   req.end();
+});
+
+const visitPost = ({ cookieString, postId }) => new Promise((resolve, reject) => {
+  const postPath = postId.replace('mod', `http://${moodleDomain}${moodleForumPostPathMode1}`);
+
+  visitMoodle({ cookieString, path: postPath })
+    .then((moodle_hku_hk_mod_forum_discuss) => {
+      const $ = cheerio.load(moodle_hku_hk_mod_forum_discuss, { decodeEntities: false });
+      const posts = [];
+
+      $('.forumpost').each((i, post) => {
+        posts.push({
+          id: $(post).prev().attr('id'),
+          author: $(post).find('.author a').html(),
+          timestamp: $(post).find('.author').html().replace(/^by\s.+\s-\s/, ''),
+          content: $(post).find('.content > .posting').html(),
+        });
+      });
+
+      resolve(posts);
+    })
+    .catch((e) => {
+      reject(e);
+    });
 });
 
 const getCourses = ({ cookieString }) => new Promise((resolve, reject) => {
@@ -281,4 +306,5 @@ module.exports = {
   proveLogin,
   getCourses,
   retrievePostsFromCourse,
+  visitPost,
 };
