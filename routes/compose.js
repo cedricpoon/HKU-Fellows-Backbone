@@ -1,9 +1,10 @@
 const express = require('express');
 
+const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
-const { decrypt, hash } = require('../auth/safe');
+const { decrypt, hash } = require('../security/safe');
 const { responseError, responseSuccess } = require('./helper');
-const { checkLogin } = require('./helper/login');
+const { tokenGatekeeper } = require('./auth');
 
 const router = express.Router();
 
@@ -63,16 +64,21 @@ router.route('/:code').post(async (req, res) => {
   } = req.body;
 
   try {
+    // check username and token are matched
+    await tokenGatekeeper({ userId: username, token });
+    // check moodleKey is valid
     const cookieString = decrypt(moodleKey);
-    const login = await checkLogin(username, token, cookieString);
-    if (login !== 200) {
-      responseError(login, res);
-    } else {
+    const isLoggedIn = await crawler.proveLogin({
+      cookieString,
+    });
+    if (isLoggedIn) {
       const postData = {
         username, title, subtitle, primaryHashtag, secondaryHashtag, content, anonymous, code,
       };
       const result = await insertNativePost(postData);
       responseSuccess(result, res);
+    } else {
+      responseError(408, res);
     }
   } catch (err) {
     switch (err.message) {
@@ -84,6 +90,9 @@ router.route('/:code').post(async (req, res) => {
         break;
       case 'crawling-error':
         responseError(421, res);
+        break;
+      case 'login-error':
+        responseError(401, res);
         break;
       default:
         responseError(500, res);
