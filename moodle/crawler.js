@@ -58,6 +58,8 @@ const visitPost = ({ cookieString, postId }) => new Promise((resolve, reject) =>
       const $ = cheerio.load(moodle_hku_hk_mod_forum_discuss, { decodeEntities: false });
       const posts = [];
 
+      if ($('.forumpost').length === 0) reject(new Error('moodle-not-enrolled'));
+
       $('.forumpost').each((i, post) => {
         posts.push({
           id: $(post).prev().attr('id'),
