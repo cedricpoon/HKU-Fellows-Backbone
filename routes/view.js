@@ -79,6 +79,9 @@ router.route('/:topicId').post(async (req, res) => {
       case 'crawling-error':
         responseError(421, res);
         break;
+      case 'login-error':
+        responseError(401, res);
+        break;
       default:
         responseError(500, res);
     }
