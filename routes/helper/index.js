@@ -1,6 +1,4 @@
 const statusMsg = require('../status/messages');
-const crawler = require('../../moodle/crawler');
-const { db } = require('../../database/connect');
 
 function responseError(code, response) {
   response.json({
@@ -16,25 +14,20 @@ function responseSuccess(payload, response, status = 200) {
   });
 }
 
-const checkLogin = async (username, token, cookieString) => {
-  // check username and token are matched
-  const user = await db.query({
-    sql: `select count(*) as count from User
-            where upper(UserId) = ? and Token = ?`,
-    values: [username.toLowerCase(), token],
-  });
-  if (user[0].count === 0) {
-    return 401;
-  }
-  // check moodleKey is valid
-  const isLoggedIn = await crawler.proveLogin({
-    cookieString,
-  });
-  if (isLoggedIn) {
-    return 200;
-  }
-  return 408;
-};
+function genericFilter(array, searchKey) {
+  return array.filter(obj => Object
+    .keys(obj)
+    .some(key => obj[key].toUpperCase().includes(searchKey.toUpperCase())));
+}
+
+function titleFilter(array, searchKey) {
+  return array.filter(obj => obj.title
+    .toUpperCase()
+    .includes(searchKey.toUpperCase())
+    || obj.subtitle
+      .toUpperCase()
+      .includes(searchKey.toUpperCase()));
+}
 
 function sortByTimestamp(a, b) {
   const aTime = new Date(a.timestamp);
@@ -43,9 +36,22 @@ function sortByTimestamp(a, b) {
   return bTime - aTime;
 }
 
+function sortByReplies(a, b) {
+  const aTime = new Date(a.replyNo);
+  const bTime = new Date(b.replyNo);
+
+  return bTime - aTime;
+}
+
 module.exports = {
   responseError,
   responseSuccess,
-  checkLogin,
-  sortByTimestamp,
+  sortBy: {
+    timestamp: sortByTimestamp,
+    replies: sortByReplies,
+  },
+  filter: {
+    generic: genericFilter,
+    title: titleFilter,
+  },
 };

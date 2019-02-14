@@ -1,8 +1,10 @@
 const express = require('express');
 
+const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
-const { decrypt } = require('../auth/safe');
-const { responseError, responseSuccess, checkLogin } = require('./helper');
+const { decrypt } = require('../security/safe');
+const { responseError, responseSuccess } = require('./helper');
+const { tokenGatekeeper } = require('./auth');
 
 const router = express.Router();
 
@@ -56,13 +58,18 @@ router.route('/:topicId').post(async (req, res) => {
   const { username, token, moodleKey } = req.body;
 
   try {
+    // check username and token are matched
+    await tokenGatekeeper({ userId: username, token });
+    // check moodleKey is valid
     const cookieString = decrypt(moodleKey);
-    const login = await checkLogin(username, token, cookieString);
-    if (login !== 200) {
-      responseError(login, res);
-    } else {
+    const isLoggedIn = await crawler.proveLogin({
+      cookieString,
+    });
+    if (isLoggedIn) {
       const result = await getNativeReply(topicId);
       responseSuccess(result, res);
+    } else {
+      responseError(408, res);
     }
   } catch (err) {
     switch (err.message) {

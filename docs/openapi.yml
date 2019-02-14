@@ -85,6 +85,12 @@ paths:
       tags:
         - Posts
       parameters:
+        - name: filter
+          in: query
+          description: 0 - Moodle, 1 - Timestamp, 2 - Replies, 3 - Temperature
+          required: false
+          schema:
+            type: integer
         - name: time
           in: query
           description: Timestamp
@@ -115,6 +121,11 @@ paths:
                   $ref: "#/components/schemas/token"
                 moodleKey:
                   $ref: "#/components/schemas/moodleKey"
+                query:
+                  type: string
+                  description: URI encoded query string for searching posts (Nullable)
+                hashtag:
+                  $ref: "#/components/schemas/hashtag"
       responses:
         200:
           description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue<br>422 - Parameter(s) mismatched<br>401 - Unauthenticated
@@ -291,6 +302,16 @@ components:
     token:
       type: string
       description: Generated account secret key from `UserId`, `Date` and `CIPER_KEY`
+    hashtag:
+      type: object
+      description: Hashtag object to be searched via `LIKE` in SQL (Nullable)
+      properties:
+        primary:
+          type: string
+          description: Primary hashtag to be queried
+        secondary:
+          type: string
+          description: Secondary hashtag to be queried
     Standard:
       type: object
       properties:
