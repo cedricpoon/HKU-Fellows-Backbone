@@ -66,18 +66,24 @@ router.route('/:topicId').post(async (req, res) => {
       cookieString,
     });
     if (isLoggedIn) {
-      const result = await getNativeReply(topicId);
-      responseSuccess(result, res);
+      if (topicId.startsWith('mod')) {
+        const result = await crawler.visitPost({ cookieString, postId: topicId });
+        responseSuccess(result, res, 200);
+      } else {
+        const result = await getNativeReply(topicId);
+        responseSuccess(result, res);
+      }
     } else {
       responseError(408, res);
     }
   } catch (err) {
+    console.log(err);
     switch (err.message) {
+      case 'moodle-not-enrolled':
+        responseError(412, res);
+        break;
       case 'database-error':
         responseError(502, res);
-        break;
-      case 'crawling-error':
-        responseError(421, res);
         break;
       case 'login-error':
         responseError(401, res);
