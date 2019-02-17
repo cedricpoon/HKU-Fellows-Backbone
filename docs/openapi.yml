@@ -18,6 +18,48 @@ tags:
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /view/{topicId}:
+    post:
+      summary: Load contents and reply of a post
+      description: Return the details of a post chronologically in json format
+      tags:
+        - Posts
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of a post
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
+      responses:
+        200:
+          description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue<br>422 - Parameter(s) mismatched<br>401 - Unauthenticated
+          content:
+            application/json:
+              schema:
+                properties:
+                  payload:
+                    type: list
+                    description: An array of returned posts' contents
+          examples:
+            Success:
+              status: 200
+              payload: [{"id":"9b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc724376c","timestamp":"2018-12-01T16:00:00.000Z","temperature":0,"content":"content...","author":"userA"},{"id":"939a848b3e04bb8f58599487c49dabb40d45a56c4e6461092bd8be89f730b0ac","timestamp":"2018-12-02T16:00:00.000Z","temperature":0,"content":"content..."}]
+            Failure:
+              status: 500
+              error: "Unknown error"
   /export/courses:
     get:
       summary: Snapshot all Faculties, Departments and Courses in json format
@@ -97,7 +139,7 @@ paths:
           examples:
             Success:
               status: 200
-              payload: [{"id":3,"native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-12-01T16:00:00.000Z","primaryHashtag":"hashtag","replyNo":1},{"id":2,"native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-11-30T16:00:00.000Z","replyNo":0}]
+              payload: [{"id":"9b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc724376c","native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-12-01T16:00:00.000Z","primaryHashtag":"hashtag","replyNo":1},{"id":"939a848b3e04bb8f58599487c49dabb40d45a56c4e6461092bd8be89f730b0ac","native":true,"solved":"False","title":"Title","subtitle":"Subtitle","timestamp":"2018-11-30T16:00:00.000Z","replyNo":0}]
             Failure:
               status: 500
               error: "Unknown error"
