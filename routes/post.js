@@ -11,7 +11,7 @@ const {
 } = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
-const { tokenGatekeeper } = require('./auth');
+const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 
 const router = express.Router();
 
@@ -205,32 +205,27 @@ router.route('/:code/:index').post(async (req, res) => {
       // check username and token are matched
       await tokenGatekeeper({ userId: username, token });
       // check moodleKey is valid
+      await moodleKeyValidator({ moodleKey });
+
       const cookieString = decrypt(moodleKey);
-      const isLoggedIn = await crawler.proveLogin({
-        cookieString,
-      });
-      if (isLoggedIn) {
-        // get all moodle posts from cache
-        const { post: moodlePosts, offset } = hashtag
-          ? { post: [], offset: 0 } : await getCachedMoodlePosts(
-            code, cookieString, index, username, filter, query,
-          );
-        // get all native posts
-        const nativePosts = await getNativePosts(
-          code, index, time, offset, filter, query, hashtag || {},
+      // get all moodle posts from cache
+      const { post: moodlePosts, offset } = hashtag
+        ? { post: [], offset: 0 } : await getCachedMoodlePosts(
+          code, cookieString, index, username, filter, query,
         );
-        // hybrid sort
-        const result = nativePosts.concat(
-          await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-        )
-          .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
-          .slice(0, postLimitPerLoad);
-        // update offset
-        updateOffset(result, code, username);
-        responseSuccess(result, res, result.length === 0 ? 204 : 200);
-      } else {
-        responseError(408, res);
-      }
+      // get all native posts
+      const nativePosts = await getNativePosts(
+        code, index, time, offset, filter, query, hashtag || {},
+      );
+      // hybrid sort
+      const result = nativePosts.concat(
+        await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
+      )
+        .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
+        .slice(0, postLimitPerLoad);
+      // update offset
+      updateOffset(result, code, username);
+      responseSuccess(result, res, result.length === 0 ? 204 : 200);
     } catch (err) {
       switch (err.message) {
         case 'database-error':
@@ -241,6 +236,9 @@ router.route('/:code/:index').post(async (req, res) => {
           break;
         case 'login-error':
           responseError(401, res);
+          break;
+        case 'moodle-key-timeout':
+          responseError(408, res);
           break;
         default:
           responseError(500, res);
