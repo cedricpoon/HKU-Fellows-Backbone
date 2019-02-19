@@ -83,8 +83,8 @@ router.route('/:code').post(async (req, res) => {
         const postData = {
           username, title, subtitle, primaryHashtag, secondaryHashtag, content, anonymous, code,
         };
-        const result = await insertNativePost(postData);
-        responseSuccess(result, res);
+        const newPost = await insertNativePost(postData);
+        responseSuccess({ topicId: newPost.topicId }, res);
       } else {
         const coursePath = await resolveCoursePathFromCode(code, cookieString);
         const defaultForum = await crawler.getDefaultForum({ cookieString, coursePath });
@@ -104,9 +104,7 @@ router.route('/:code').post(async (req, res) => {
           content,
         });
 
-        if (newPost) {
-          responseSuccess(newPost, res, newPost ? 200 : 204);
-        }
+        responseSuccess({ topicId: newPost.id }, res, newPost ? 200 : 204);
       }
     } else {
       responseError(422, res);
