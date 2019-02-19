@@ -4,7 +4,7 @@ const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../security/safe');
 const { responseError, responseSuccess } = require('./helper');
-const { tokenGatekeeper } = require('./auth');
+const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 
 const router = express.Router();
 
@@ -61,20 +61,17 @@ router.route('/:topicId').post(async (req, res) => {
     // check username and token are matched
     await tokenGatekeeper({ userId: username, token });
     // check moodleKey is valid
+    await moodleKeyValidator({ moodleKey });
+
     const cookieString = decrypt(moodleKey);
-    const isLoggedIn = await crawler.proveLogin({
-      cookieString,
-    });
-    if (isLoggedIn) {
-      if (topicId.startsWith('mod')) {
-        const result = await crawler.visitPost({ cookieString, postId: topicId });
-        responseSuccess(result, res, 200);
-      } else {
-        const result = await getNativeReply(topicId);
-        responseSuccess(result, res);
-      }
+    if (topicId.startsWith('mod')) {
+      // get content of moodle post
+      const result = await crawler.visitPost({ cookieString, postId: topicId });
+      responseSuccess(result, res);
     } else {
-      responseError(408, res);
+      // get content of native post
+      const result = await getNativeReply(topicId);
+      responseSuccess(result, res);
     }
   } catch (err) {
     console.log(err);
@@ -87,6 +84,9 @@ router.route('/:topicId').post(async (req, res) => {
         break;
       case 'login-error':
         responseError(401, res);
+        break;
+      case 'moodle-key-timeout':
+        responseError(408, res);
         break;
       default:
         responseError(500, res);
