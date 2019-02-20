@@ -1,11 +1,13 @@
 module.exports = {
   200: 'Success',
-  204: 'No Content',
+  204: 'No content',
 
   400: 'Crawling error',
   401: 'Unauthenticated',
-  408: 'MoodleKey Timeout',
-  412: 'Crawling error',
+  404: 'Forum not found',
+  406: 'Moodle post not created',
+  408: 'MoodleKey timeout',
+  412: 'Moodle not enrolled',
   421: 'Crawling error',
   422: 'Malformed request',
 
