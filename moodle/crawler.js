@@ -11,6 +11,8 @@ const {
   moodleLoginPath,
   moodleForumPostPath,
   moodleForumPostPathMode1,
+  moodleComposePath,
+  moodleComposeForumIdPath,
 } = require('./urls');
 
 const {
@@ -20,34 +22,100 @@ const {
   extractSlug,
 } = require('./helper');
 
-const visitMoodle = ({ cookieString, path }) => new Promise((resolve, reject) => {
+const visitMoodle = ({
+  cookieString,
+  path,
+  postData: _postData,
+}) => new Promise((resolve, reject) => {
+  const postData = _postData != null ? querystring.stringify(_postData) : null;
+  const postHeader = postData != null ? {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': Buffer.byteLength(postData),
+  } : {};
+
   const options = {
     hostname: moodleDomain,
     port: 80,
-    method: 'GET',
+    method: postData != null ? 'POST' : 'GET',
     path: path || '/',
     headers: {
       Cookie: cookieString,
+      ...postHeader,
     },
   };
   const req = http.request(options, (res) => {
     let chunks = '';
-
     res.setEncoding('utf8');
     res.on('data', (chunk) => {
       chunks += chunk;
     });
-
     res.on('end', () => {
       resolve(chunks);
     });
   });
-
   req.on('error', (e) => {
     reject(e);
   });
-
+  if (postData != null) {
+    // post the data
+    req.write(postData);
+  }
   req.end();
+});
+
+const composePost = ({
+  cookieString,
+  mCourseId,
+  mForumId,
+  title,
+  content,
+  moodleConfig,
+}) => new Promise((resolve, reject) => {
+  const postData = {
+    course: mCourseId,
+    forum: mForumId,
+    sesskey: moodleConfig.sesskey,
+    _qf__mod_forum_post_form: 1,
+    mform_isexpanded_id_general: 1,
+    subject: title,
+    'message[text]': content,
+    'message[format]': 1,
+    'message[itemid]': moodleConfig.itemid,
+    discussionsubscribe: 1,
+    attachments: moodleConfig.attachments,
+    submitbutton: 'Post to forum',
+  };
+
+  visitMoodle({ cookieString, path: moodleComposePath, postData })
+    .then((moodle_hku_hk_mod_forum_view) => {
+      if (moodle_hku_hk_mod_forum_view.includes('Your post was successfully added.')
+        || moodle_hku_hk_mod_forum_view.includes('This post will be mailed out immediately to all forum subscribers.')
+      ) {
+        const $ = cheerio.load(moodle_hku_hk_mod_forum_view, { decodeEntities: false });
+        let newPost = null;
+
+        $('table.forumheaderlist tbody tr').each((i, post) => {
+          const postTitle = $(post).children('.topic').children('a').html();
+          if (postTitle === title) {
+            newPost = {
+              id: $(post).children('.topic').children('a').attr('href')
+                .replace(`http://${moodleDomain}${moodleForumPostPath}`, 'mod'),
+              native: false,
+              timestamp: $(post).children('.lastpost').children('a[href*="discuss.php"]').html(),
+              replyNo: Number($(post).children('.replies').children('a').html()),
+              title,
+              subtitle: $('div[role="main"] > h2').html(),
+            };
+          }
+        });
+
+        resolve(newPost);
+      }
+      reject(new Error('moodle-post-not-created'));
+    })
+    .catch((e) => {
+      reject(e);
+    });
 });
 
 const visitPost = ({ cookieString, postId }) => new Promise((resolve, reject) => {
@@ -124,18 +192,25 @@ const getPosts = ({ cookieString, forumPath }) => new Promise((resolve, reject) 
     });
 });
 
-const getForums = ({ cookieString, coursePath }) => new Promise((resolve, reject) => {
+const getForums = ({ cookieString, coursePath, generalOnly }) => new Promise((resolve, reject) => {
   visitMoodle({ cookieString, path: coursePath })
     .then((moodle_hku_hk_course) => {
       const forums = [];
       const $ = cheerio.load(moodle_hku_hk_course, { decodeEntities: false });
 
       $('a[href*="/mod/forum/view.php?id="]').each((i, elem) => {
-        forums.push({
+        const forum = {
           description: $($(elem).children('span')).html().replace(/<span.+<\/span>/, ''),
           path: $(elem).attr('href').replace('http://moodle.hku.hk', ''),
-        });
+        };
+
+        if (generalOnly && forum.description.toLowerCase().match(/(general|default)/g)) {
+          resolve(forum);
+        }
+        forums.push(forum);
       });
+
+      if (generalOnly) reject(new Error('moodle-no-default-forum'));
 
       setTimeout(() => {
         resolve(forums);
@@ -144,6 +219,35 @@ const getForums = ({ cookieString, coursePath }) => new Promise((resolve, reject
     .catch((e) => {
       reject(e);
     });
+});
+
+const getForumConfigKeypair = ({ cookieString, forumPath }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString, path: forumPath })
+    .then((moodle_hku_hk_mod_forum) => {
+      const $ = cheerio.load(moodle_hku_hk_mod_forum, { decodeEntities: false });
+      const mfId = $('input[name="forum"]').attr('value');
+
+      visitMoodle({ cookieString, path: `http://${moodleDomain}${moodleComposeForumIdPath}${mfId}` })
+        .then((moodle_hku_hk_mod_forum_post) => {
+          const $$ = cheerio.load(moodle_hku_hk_mod_forum_post, { decodeEntities: false });
+
+          resolve({
+            id: mfId,
+            sesskey: $$('input[name="sesskey"]').attr('value'),
+            itemid: $$('input[name="message[itemid]"]').attr('value'),
+            attachments: $$('input[name="message[attachments]"]').attr('value'),
+          });
+        });
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const getDefaultForum = ({ cookieString, coursePath }) => getForums({
+  cookieString,
+  coursePath,
+  generalOnly: true,
 });
 
 const retrievePostsFromCourse = async ({ cookieString, coursePath }) => {
@@ -307,6 +411,9 @@ module.exports = {
   visitMoodle,
   proveLogin,
   getCourses,
+  getDefaultForum,
+  getForumConfigKeypair,
   retrievePostsFromCourse,
   visitPost,
+  composePost,
 };

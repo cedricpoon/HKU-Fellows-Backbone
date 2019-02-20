@@ -37,10 +37,10 @@ function sortByTimestamp(a, b) {
 }
 
 function sortByReplies(a, b) {
-  const aTime = new Date(a.replyNo);
-  const bTime = new Date(b.replyNo);
+  const aReply = new Date(a.replyNo);
+  const bReply = new Date(b.replyNo);
 
-  return bTime - aTime;
+  return bReply - aReply;
 }
 
 module.exports = {
