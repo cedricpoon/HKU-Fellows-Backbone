@@ -50,7 +50,7 @@ const getNativeReply = async (topicId) => {
     return {
       title: resTopic.Title,
       subtitle: resTopic.Subtitle,
-      native: '1',
+      native: 1,
       solved: resTopic.Solved,
       posts: resultPosts,
     };
