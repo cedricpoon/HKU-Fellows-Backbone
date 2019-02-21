@@ -11,7 +11,7 @@ const router = express.Router();
 
 const insertNativePost = async (postData) => {
   const {
-    username, title, subtitle, primaryHashtag, secondaryHashtag, content, anonymous, code,
+    username, title, subtitle, hashtag, content, anonymous, code,
   } = postData;
   const currentTime = Date.now();
   const topicId = hash(`Topic${title}${currentTime}`);
@@ -35,9 +35,9 @@ const insertNativePost = async (postData) => {
       values: [
         topicId,
         title,
-        subtitle,
-        primaryHashtag || null,
-        secondaryHashtag || null,
+        subtitle || null,
+        hashtag.primary || null,
+        hashtag.secondary || null,
         postId,
         code.toUpperCase(),
       ],
@@ -66,11 +66,13 @@ router.route('/:code').post(async (req, res) => {
   const { code } = req.params;
   const {
     username, token, moodleKey,
-    title, subtitle, primaryHashtag,
-    secondaryHashtag, content, anonymous, native,
+    title, subtitle, hashtag: _hashtag,
+    content, anonymous, native,
   } = req.body;
 
   try {
+    const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
+
     if ((native === '1' && (anonymous === '0' || anonymous === '1')) || native === '0') {
       // check username and token are matched
       await tokenGatekeeper({ userId: username, token });
@@ -80,12 +82,14 @@ router.route('/:code').post(async (req, res) => {
       const cookieString = decrypt(moodleKey);
 
       if (native === '1') {
+        // compose post to native database
         const postData = {
-          username, title, subtitle, primaryHashtag, secondaryHashtag, content, anonymous, code,
+          username, title, subtitle, hashtag, content, anonymous, code,
         };
         const newPost = await insertNativePost(postData);
         responseSuccess({ topicId: newPost.topicId }, res);
       } else {
+        // compose post to Moodle
         const coursePath = await resolveCoursePathFromCode(code, cookieString);
         const defaultForum = await crawler.getDefaultForum({ cookieString, coursePath });
 
