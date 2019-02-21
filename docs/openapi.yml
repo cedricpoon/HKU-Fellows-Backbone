@@ -17,9 +17,74 @@ tags:
     description: Post related routes from `post.js`
   - name: Fetch Posts
     description: Viewing posts related routes from `view.js`
+  - name: Create Posts
+    description: Composing posts related routes from `compose.js`
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /compose/{code}:
+    post:
+      summary: Create a post with details
+      description: Compose a post in native database or in Moodle
+      tags:
+        - Create Posts
+      parameters:
+        - name: code
+          in: path
+          description: Course code
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
+                title:
+                  type: string
+                  description: Title of the post being created
+                subtitle:
+                  type: string
+                  description: Subtitle of the post being created (Nullable)
+                hashtag:
+                  $ref: "#/components/schemas/hashtag"
+                content:
+                  type: string
+                  description: Content of the post being created
+                anonymous:
+                  type: integer
+                  minimum: 0
+                  maximum: 1
+                  description: Determine whether the post author is anonymous or not (Nullable when native = 0)
+                native:
+                  type: integer
+                  minimum: 0
+                  maximum: 1
+                  description: Determine whether the post created in native database or Moodle
+      responses:
+        200:
+          description: 200 - Success<br>204 - Return empty post<br>401 - Unauthenticated<br>404 - Moodle no Default Forum<br>406 - Moodle post not created<br>408 - Moodle Key Timeout<br>412 - Course not enrolled in Moodle<br>500 - Unknown error<br>502 - Database issue
+          content:
+            application/json:
+              schema:
+                properties:
+                  payload:
+                    type: list
+                    description: Info of the post created
+          examples:
+            Success:
+              status: 200
+              payload: {"topicId": "mod424377"}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /view/{topicId}:
     post:
       summary: Load contents and reply of a post
