@@ -137,7 +137,11 @@ const visitPost = ({ cookieString, postId }) => new Promise((resolve, reject) =>
         });
       });
 
-      resolve(posts);
+      resolve({
+        title: $('.discussionname').html(),
+        subtitle: $('div[role="main"] > h2').html(),
+        posts,
+      });
     })
     .catch((e) => {
       reject(e);
