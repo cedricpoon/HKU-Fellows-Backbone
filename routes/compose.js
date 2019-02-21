@@ -70,8 +70,9 @@ router.route('/:code').post(async (req, res) => {
     content, anonymous, native,
   } = req.body;
 
-  const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
   try {
+    const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
+
     if ((native === '1' && (anonymous === '0' || anonymous === '1')) || native === '0') {
       // check username and token are matched
       await tokenGatekeeper({ userId: username, token });
