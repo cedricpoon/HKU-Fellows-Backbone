@@ -52,13 +52,30 @@ paths:
             application/json:
               schema:
                 properties:
-                  payload:
+                  title:
+                    type: string
+                    description: title of post
+                  subtitle:
+                    type: string
+                    description: subtitle of post, nullable
+                  native:
+                    type: string
+                    description: 1 or null to indicate is post native
+                  solved:
+                    type: string
+                    description: postId of solving post, nullable
+                  posts:
                     type: list
                     description: An array of returned posts' contents
           examples:
             Success:
               status: 200
-              payload: [{"id":"9b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc724376c","timestamp":"2018-12-01T16:00:00.000Z","temperature":0,"content":"content...","author":"userA"},{"id":"939a848b3e04bb8f58599487c49dabb40d45a56c4e6461092bd8be89f730b0ac","timestamp":"2018-12-02T16:00:00.000Z","temperature":0,"content":"content..."}]
+              payload:
+                title: "title"
+                subtitle: "subtitle"
+                native: "1"
+                solved: "7b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc0202342"
+                posts: [{"id":"9b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc724376c","timestamp":"2018-12-01T16:00:00.000Z","temperature":0,"content":"content...","author":"userA"},{"id":"939a848b3e04bb8f58599487c49dabb40d45a56c4e6461092bd8be89f730b0ac","timestamp":"2018-12-02T16:00:00.000Z","temperature":0,"content":"content..."}]
             Failure:
               status: 500
               error: "Unknown error"
