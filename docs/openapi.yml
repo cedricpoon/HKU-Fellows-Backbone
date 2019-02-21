@@ -15,6 +15,8 @@ tags:
     description: Login related routes from `login.js`
   - name: Posts
     description: Post related routes from `post.js`
+  - name: Fetch Posts
+    description: Viewing posts related routes from `view.js`
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
@@ -23,7 +25,7 @@ paths:
       summary: Load contents and reply of a post
       description: Return the details of a post chronologically in json format
       tags:
-        - Posts
+        - Fetch Posts
       parameters:
         - name: topicId
           in: path
@@ -45,7 +47,7 @@ paths:
                   $ref: "#/components/schemas/moodleKey"
       responses:
         200:
-          description: 200 - Success<br>204 - No more post<br>408 - Moodle Key not valid<br>421 - crawling error<br>500 - Unknown error<br>502 - Database connection issue<br>422 - Parameter(s) mismatched<br>401 - Unauthenticated
+          description: 200 - Success<br>401 - Unauthenticated<br>408 - Moodle Key Timeout<br>412 - Course not enrolled in Moodle<br>500 - Unknown error<br>502 - Database issue
           content:
             application/json:
               schema:
