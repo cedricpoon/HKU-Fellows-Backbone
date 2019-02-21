@@ -194,14 +194,14 @@ router.route('/:code/:index').post(async (req, res) => {
     hashtag: _hashtag,
   } = req.body;
 
-  const query = _query ? decodeURI(_query) : '';
-  const filter = _filter ? parseInt(_filter, 10) : filterMode.TIMESTAMP;
-  const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
-
   if (!time) {
     responseError(422, res);
   } else {
     try {
+      const query = _query ? decodeURI(_query) : '';
+      const filter = _filter ? parseInt(_filter, 10) : filterMode.TIMESTAMP;
+      const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
+
       // check username and token are matched
       await tokenGatekeeper({ userId: username, token });
       // check moodleKey is valid

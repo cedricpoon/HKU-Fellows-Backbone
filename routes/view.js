@@ -12,7 +12,7 @@ const getNativeReply = async (topicId) => {
   try {
     // get native post from database
     const topic = await db.query({
-      sql: `select P.*
+      sql: `select *
               from Topic T
               join Post as P on T.PostId = P.PostId
               where T.TopicId = ?`,
@@ -47,7 +47,13 @@ const getNativeReply = async (topicId) => {
       if (!dbobj.Anonymous) resultobj.author = dbobj.Author;
       resultPosts.push(resultobj);
     }
-    return resultPosts;
+    return {
+      title: resTopic.Title,
+      subtitle: resTopic.Subtitle,
+      native: 1,
+      solved: resTopic.Solved,
+      posts: resultPosts,
+    };
   } catch (e) {
     throw new Error('database-error');
   }
