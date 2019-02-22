@@ -1,3 +1,7 @@
+const cheerio = require('cheerio');
+const { turndown } = require('./markdown');
+const { moodleDomain, moodlePluginFile } = require('./urls');
+
 function parseTicket(data) {
   try {
     const matched = data.match(/ticket=(.*)"/);
@@ -41,9 +45,23 @@ function extractSlug(innerHTML) {
   }
 }
 
+function standardizePost(content) {
+  const $ = cheerio.load(content, { decodeEntities: false });
+  // replace img to hyperlink
+  $(`img[src*="${moodleDomain}${moodlePluginFile}"]`).each((i, elem) => {
+    $(elem).replaceWith($(`<a href="${$(elem).attr('src')}">[Attached Image]</a>`));
+  });
+  // replace video to hyperlink
+  $(`video > source[src*="${moodleDomain}${moodlePluginFile}"]`).each((i, elem) => {
+    $(elem).parent().replaceWith($(`<a href="${$(elem).attr('src')}">[Attached Video]</a>`));
+  });
+  return turndown.turndown($.html());
+}
+
 module.exports = {
   parseTicket,
   extractDomainCookies,
   lookupLoginPattern,
   extractSlug,
+  standardizePost,
 };
