@@ -20,6 +20,7 @@ const {
   extractDomainCookies,
   lookupLoginPattern,
   extractSlug,
+  standardizePost,
 } = require('./helper');
 
 const visitMoodle = ({
@@ -133,7 +134,7 @@ const visitPost = ({ cookieString, postId }) => new Promise((resolve, reject) =>
           id: $(post).prev().attr('id'),
           author: $(post).find('.author a').html(),
           timestamp: $(post).find('.author').html().replace(/^by\s.+\s-\s/, ''),
-          content: $(post).find('.content > .posting').html(),
+          content: standardizePost($(post).find('.content > .posting').html()),
         });
       });
 

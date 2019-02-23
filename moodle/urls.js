@@ -9,4 +9,5 @@ module.exports = {
   moodleForumPostPathMode1: '/mod/forum/discuss.php?mode=1&d=',
   moodleComposePath: '/mod/forum/post.php',
   moodleComposeForumIdPath: '/mod/forum/post.php?forum=',
+  moodlePluginFile: '/pluginfile.php',
 };
