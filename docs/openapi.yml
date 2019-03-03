@@ -59,7 +59,7 @@ paths:
             Failure:
               status: 500
               error: "Unknown error"
-  /vote/{postId}/like:
+  /vote/{postId}/up:
     post:
       summary: Like a post
       description: Rate a post in database with a like
@@ -82,12 +82,10 @@ paths:
                   $ref: "#/components/schemas/username"
                 token:
                   $ref: "#/components/schemas/token"
-                moodleKey:
-                  $ref: "#/components/schemas/moodleKey"
       responses:
         200:
           $ref: "#/components/responses/Rate"
-  /vote/{postId}/dislike:
+  /vote/{postId}/down:
     post:
       summary: Dislike a post
       description: Rate a post in database with a dislike
@@ -110,8 +108,6 @@ paths:
                   $ref: "#/components/schemas/username"
                 token:
                   $ref: "#/components/schemas/token"
-                moodleKey:
-                  $ref: "#/components/schemas/moodleKey"
       responses:
         200:
           $ref: "#/components/responses/Rate"
@@ -427,16 +423,17 @@ paths:
 components:
   responses:
     Rate:
-      description: 200 - Success<br>401 - Unauthenticated<br>408 - Moodle Key Timeout<br>409 - Entry conflict<br>500 - Unknown error<br>502 - Database issue
+      description: 200 - Success<br>401 - Unauthenticated<br>409 - Entry conflict<br>410 - Self voting<br>500 - Unknown error<br>502 - Database issue
       content:
         application/json:
           schema:
             oneOf:
-              - $ref: "#/components/schemas/Empty-Payload"
+              - $ref: "#/components/schemas/Standard"
               - $ref: "#/components/schemas/Error"
       examples:
         Success:
           status: 200
+          payload: {}
         Failure:
           status: 409
           error: "Entry conflict"
@@ -517,11 +514,6 @@ components:
           type: number
         payload:
           type: array
-    Empty-Payload:
-      type: object
-      properties:
-        status:
-          type: number
     Error:
       type: object
       properties:
