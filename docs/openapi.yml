@@ -13,6 +13,8 @@ tags:
     description: Common routes from `index.js`
   - name: Authentication
     description: Login related routes from `login.js`
+  - name: User Profile
+    description: User related informational routes from `profile.js`
   - name: Posts
     description: Post related routes from `post.js`
   - name: Fetch Posts
@@ -24,6 +26,39 @@ tags:
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /profile/temperature:
+    post:
+      summary: Get user temperature
+      description: Sum all user related posts' temperature as user temperature
+      tags:
+        - User Profile
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: 200 - Success<br>401 - Unauthenticated<br>500 - Unknown error<br>502 - Database issue
+          content:
+            application/json:
+              schema:
+                properties:
+                  temperature:
+                    type: number
+                    description: User temperature
+          examples:
+            Success:
+              status: 200
+              payload: {"temperature": 200}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /vote/{postId}/like:
     post:
       summary: Like a post
