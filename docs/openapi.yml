@@ -19,9 +19,67 @@ tags:
     description: Viewing posts related routes from `view.js`
   - name: Create Posts
     description: Composing posts related routes from `compose.js`
+  - name: Rate Posts
+    description: Voting posts related routes from `vote.js`
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /vote/{postId}/like:
+    post:
+      summary: Like a post
+      description: Rate a post in database with a like
+      tags:
+        - Rate Posts
+      parameters:
+        - name: postId
+          in: path
+          description: Id of a post
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
+      responses:
+        200:
+          $ref: "#/components/responses/Rate"
+  /vote/{postId}/dislike:
+    post:
+      summary: Dislike a post
+      description: Rate a post in database with a dislike
+      tags:
+        - Rate Posts
+      parameters:
+        - name: postId
+          in: path
+          description: Id of a post
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                moodleKey:
+                  $ref: "#/components/schemas/moodleKey"
+      responses:
+        200:
+          $ref: "#/components/responses/Rate"
   /compose/{code}:
     post:
       summary: Create a post with details
@@ -333,6 +391,20 @@ paths:
               error: "Database connection failure"
 components:
   responses:
+    Rate:
+      description: 200 - Success<br>401 - Unauthenticated<br>408 - Moodle Key Timeout<br>409 - Entry conflict<br>500 - Unknown error<br>502 - Database issue
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/Empty-Payload"
+              - $ref: "#/components/schemas/Error"
+      examples:
+        Success:
+          status: 200
+        Failure:
+          status: 409
+          error: "Entry conflict"
     Login:
       description: 200 - Success<br>502 - RDS connectivity issue<br>401 - Username / Password mismatched<br>421 - No 2nd / 3rd level login redirect url matched<br>400 - No 2nd / 3rd level login redirect<br>500 - Unknown crawler issue<br>422 - Parameter(s) mismatched
       content:
@@ -410,6 +482,11 @@ components:
           type: number
         payload:
           type: array
+    Empty-Payload:
+      type: object
+      properties:
+        status:
+          type: number
     Error:
       type: object
       properties:
