@@ -7,6 +7,7 @@ module.exports = {
   404: 'Forum not found',
   406: 'Moodle post not created',
   408: 'MoodleKey timeout',
+  409: 'Entry conflict',
   412: 'Moodle not enrolled',
   421: 'Crawling error',
   422: 'Malformed request',
