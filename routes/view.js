@@ -60,6 +60,68 @@ const getNativeReply = async (topicId, username) => {
   }
 };
 
+const adoptAnswer = async (topicId, postId, username) => {
+  try {
+    const topic = await db.query({
+      sql: `select Author, Solved
+              from Topic T
+              join Post as P on T.PostId = P.PostId
+              where T.TopicId = ?`,
+      values: [topicId],
+    });
+    const reply = await db.query({
+      sql: `select * from Reply
+              where PostId = ? and TopicId = ?`,
+      values: [postId, topicId],
+    });
+    // topic have been solved
+    if (topic[0].Solved !== null) throw new Error('inaccessible');
+    // user is not the author of post
+    if (topic[0].Author !== username) throw new Error('inaccessible');
+    // reply not belong to topic
+    if (reply.length === 0) throw new Error('inaccessible');
+
+    await db.query({
+      sql: `update Topic set Solved = ?
+              where TopicId = ?`,
+      values: [postId, topicId],
+    });
+  } catch (e) {
+    console.log(e);
+    if (e.message === 'inaccessible') {
+      throw e;
+    }
+    throw new Error('database-error');
+  }
+};
+
+router.route('/:topicId/adopt').post(async (req, res) => {
+  const { topicId } = req.params;
+  const { username, token, postId } = req.body;
+
+  try {
+    // check username and token are matched
+    await tokenGatekeeper({ userId: username, token });
+
+    await adoptAnswer(topicId, postId, username);
+    responseSuccess({}, res);
+  } catch (err) {
+    switch (err.message) {
+      case 'inaccessible':
+        responseError(403, res);
+        break;
+      case 'database-error':
+        responseError(502, res);
+        break;
+      case 'login-error':
+        responseError(401, res);
+        break;
+      default:
+        responseError(500, res);
+    }
+  }
+});
+
 router.route('/:topicId').post(async (req, res) => {
   const { topicId } = req.params;
   const { username, token, moodleKey } = req.body;
