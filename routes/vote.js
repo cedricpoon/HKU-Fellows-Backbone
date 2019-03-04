@@ -27,7 +27,6 @@ const ratePost = async (postId, userId, rate) => {
             where PostId = ?`,
       values: [rate, postId],
     });
-    return {};
   } catch (e) {
     // entry of same userId and postId existed
     if (e.errno === 1062) {
@@ -48,8 +47,8 @@ const voteRouter = value => async (req, res) => {
     // check username and token are matched
     await tokenGatekeeper({ userId: username, token });
 
-    const result = await ratePost(postId, username, value);
-    responseSuccess(result, res);
+    await ratePost(postId, username, value);
+    responseSuccess({}, res);
   } catch (err) {
     switch (err.message) {
       case 'entry-exist-error':

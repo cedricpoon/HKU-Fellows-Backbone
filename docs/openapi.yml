@@ -236,7 +236,7 @@ paths:
             Failure:
               status: 500
               error: "Unknown error"
-  /view/{topicId}/{postId}:
+  /view/{topicId}/adopt:
     post:
       summary: Adopt answer to a post
       description: Author of the post choose a reply be the best answer
@@ -245,13 +245,7 @@ paths:
       parameters:
         - name: topicId
           in: path
-          description: Id of a post
-          required: true
-          schema:
-            type: string
-        - name: postId
-          in: path
-          description: Id of a reply post
+          description: Id of a topic post
           required: true
           schema:
             type: string
@@ -265,6 +259,9 @@ paths:
                   $ref: "#/components/schemas/username"
                 token:
                   $ref: "#/components/schemas/token"
+                postId:
+                  type: string
+                  description: Id of a reply post
       responses:
         200:
           description: 200 - Success<br>401 - Unauthenticated<br>403 - User inaccessible<br>500 - Unknown error<br>502 - Database issue

@@ -69,34 +69,42 @@ const adoptAnswer = async (topicId, postId, username) => {
               where T.TopicId = ?`,
       values: [topicId],
     });
+    const reply = await db.query({
+      sql: `select * from Reply
+              where PostId = ? and TopicId = ?`,
+      values: [postId, topicId],
+    });
     // topic have been solved
     if (topic[0].Solved !== null) throw new Error('inaccessible');
-    // user is the author of post
+    // user is not the author of post
     if (topic[0].Author !== username) throw new Error('inaccessible');
+    // reply not belong to topic
+    if (reply.length === 0) throw new Error('inaccessible');
+
     await db.query({
       sql: `update Topic set Solved = ?
               where TopicId = ?`,
       values: [postId, topicId],
     });
-    return {};
   } catch (e) {
+    console.log(e);
     if (e.message === 'inaccessible') {
-      throw new Error('inaccessible');
+      throw e;
     }
     throw new Error('database-error');
   }
 };
 
-router.route('/:topicId/:postId').post(async (req, res) => {
-  const { topicId, postId } = req.params;
-  const { username, token } = req.body;
+router.route('/:topicId/adopt').post(async (req, res) => {
+  const { topicId } = req.params;
+  const { username, token, postId } = req.body;
 
   try {
     // check username and token are matched
     await tokenGatekeeper({ userId: username, token });
 
-    const result = await adoptAnswer(topicId, postId, username);
-    responseSuccess(result, res);
+    await adoptAnswer(topicId, postId, username);
+    responseSuccess({}, res);
   } catch (err) {
     switch (err.message) {
       case 'inaccessible':
