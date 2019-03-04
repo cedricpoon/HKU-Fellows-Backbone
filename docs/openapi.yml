@@ -218,6 +218,9 @@ paths:
                   solved:
                     type: string
                     description: postId of solving post, nullable
+                  owned:
+                    type: number
+                    description: 1 to indicate ownership and 0 to oppose, nullable
                   posts:
                     type: list
                     description: An array of returned posts' contents
