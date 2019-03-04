@@ -27,6 +27,7 @@ const ratePost = async (postId, userId, rate) => {
             where PostId = ?`,
       values: [rate, postId],
     });
+    return {};
   } catch (e) {
     // entry of same userId and postId existed
     if (e.errno === 1062) {
