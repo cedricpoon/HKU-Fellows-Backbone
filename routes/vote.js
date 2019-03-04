@@ -47,8 +47,8 @@ const voteRouter = value => async (req, res) => {
     // check username and token are matched
     await tokenGatekeeper({ userId: username, token });
 
-    const result = await ratePost(postId, username, value);
-    responseSuccess(result, res);
+    await ratePost(postId, username, value);
+    responseSuccess({}, res);
   } catch (err) {
     switch (err.message) {
       case 'entry-exist-error':
