@@ -8,7 +8,7 @@ const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 
 const router = express.Router();
 
-const getNativeReply = async (topicId) => {
+const getNativeReply = async (topicId, username) => {
   try {
     // get native post from database
     const topic = await db.query({
@@ -52,6 +52,7 @@ const getNativeReply = async (topicId) => {
       subtitle: resTopic.Subtitle,
       native: 1,
       solved: resTopic.Solved,
+      owned: username === resTopic.Author ? 1 : 0,
       posts: resultPosts,
     };
   } catch (e) {
@@ -76,7 +77,7 @@ router.route('/:topicId').post(async (req, res) => {
       responseSuccess(result, res);
     } else {
       // get content of native post
-      const result = await getNativeReply(topicId);
+      const result = await getNativeReply(topicId, username);
       responseSuccess(result, res);
     }
   } catch (err) {
