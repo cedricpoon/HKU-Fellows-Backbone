@@ -236,6 +236,51 @@ paths:
             Failure:
               status: 500
               error: "Unknown error"
+  /view/{topicId}/{postId}:
+    post:
+      summary: Adopt answer to a post
+      description: Author of the post choose a reply be the best answer
+      tags:
+        - Fetch Posts
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of a post
+          required: true
+          schema:
+            type: string
+        - name: postId
+          in: path
+          description: Id of a reply post
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: 200 - Success<br>401 - Unauthenticated<br>403 - User inaccessible<br>500 - Unknown error<br>502 - Database issue
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Standard"
+                  - $ref: "#/components/schemas/Error"
+          examples:
+            Success:
+              status: 200
+              payload: {}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /export/courses:
     get:
       summary: Snapshot all Faculties, Departments and Courses in json format

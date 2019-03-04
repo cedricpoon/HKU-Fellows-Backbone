@@ -4,6 +4,7 @@ module.exports = {
 
   400: 'Crawling error',
   401: 'Unauthenticated',
+  403: 'Not accessible',
   404: 'Forum not found',
   406: 'Moodle post not created',
   408: 'MoodleKey timeout',
