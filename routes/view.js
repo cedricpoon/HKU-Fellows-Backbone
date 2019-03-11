@@ -2,7 +2,7 @@ const express = require('express');
 
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
-const { decrypt } = require('../security/safe');
+const { decrypt, hash } = require('../security/safe');
 const { responseError, responseSuccess } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 
@@ -95,6 +95,36 @@ const adoptAnswer = async (topicId, postId, username) => {
   }
 };
 
+const insertNativeReply = async (topicId, username, content, anonymous) => {
+  const currentTime = Date.now();
+  const postId = hash(username + currentTime);
+  const replyId = hash(`Reply${username}${currentTime}`);
+
+  try {
+    await db.query({
+      sql: `insert into Post (PostId, Content, Author, Anonymous)
+            values (?, ?, ?, ?)`,
+      values: [
+        postId,
+        content,
+        username,
+        anonymous === '1' ? 1 : 0,
+      ],
+    });
+    await db.query({
+      sql: 'insert into Reply values (?, ?, ?)',
+      values: [
+        replyId,
+        postId,
+        topicId,
+      ],
+    });
+    return { postId };
+  } catch (e) {
+    throw new Error('database-error');
+  }
+};
+
 router.route('/:topicId/adopt').post(async (req, res) => {
   const { topicId } = req.params;
   const { username, token, postId } = req.body;
@@ -115,6 +145,53 @@ router.route('/:topicId/adopt').post(async (req, res) => {
         break;
       case 'login-error':
         responseError(401, res);
+        break;
+      default:
+        responseError(500, res);
+    }
+  }
+});
+
+router.route('/:topicId/reply').post(async (req, res) => {
+  const { topicId } = req.params;
+  const {
+    username, token, moodleKey,
+    content, anonymous,
+  } = req.body;
+
+  try {
+    // check username and token are matched
+    await tokenGatekeeper({ userId: username, token });
+
+    if (topicId.startsWith('mod')) {
+      // check moodleKey is valid
+      await moodleKeyValidator({ moodleKey });
+      const cookieString = decrypt(moodleKey);
+
+      // reply moodle post
+      // const result = await crawler.visitPost({ cookieString, postId: topicId });
+      // responseSuccess(result, res);
+    } else if (anonymous === '0' || anonymous === '1') {
+      // get content of native post
+      const result = await insertNativeReply(topicId, username, content, anonymous);
+      responseSuccess(result, res);
+    } else {
+      responseError(422, res);
+    }
+  } catch (err) {
+    console.log(err);
+    switch (err.message) {
+      case 'moodle-not-enrolled':
+        responseError(412, res);
+        break;
+      case 'database-error':
+        responseError(502, res);
+        break;
+      case 'login-error':
+        responseError(401, res);
+        break;
+      case 'moodle-key-timeout':
+        responseError(408, res);
         break;
       default:
         responseError(500, res);
