@@ -13,6 +13,7 @@ const {
   moodleForumPostPathMode1,
   moodleComposePath,
   moodleComposeForumIdPath,
+  moodleReplyPath,
 } = require('./urls');
 
 const {
@@ -111,6 +112,45 @@ const composePost = ({
         });
 
         resolve(newPost);
+      }
+      reject(new Error('moodle-post-not-created'));
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const replyPost = ({
+  cookieString,
+  mCourseId,
+  mDiscussionId,
+  parentId,
+  moodleConfig,
+  title,
+  content,
+}) => new Promise((resolve, reject) => {
+  const postData = {
+    course: mCourseId,
+    discussion: mDiscussionId,
+    parent: parentId,
+    reply: parentId,
+    sesskey: moodleConfig.sesskey,
+    _qf__mod_forum_post_form: 1,
+    mform_isexpanded_id_general: 1,
+    subject: `Re: ${title}`,
+    'message[text]': content,
+    'message[format]': 1,
+    'message[itemid]': moodleConfig.itemid,
+    discussionsubscribe: 1,
+    submitbutton: 'Post to forum',
+  };
+
+  visitMoodle({ cookieString, path: moodleReplyPath, postData })
+    .then((moodle_hku_hk_mod_forum_reply) => {
+      if (moodle_hku_hk_mod_forum_reply.includes('Your post was successfully added.')
+        || moodle_hku_hk_mod_forum_reply.includes('This post will be mailed out immediately to all forum subscribers.')
+      ) {
+        resolve({});
       }
       reject(new Error('moodle-post-not-created'));
     })
@@ -421,4 +461,5 @@ module.exports = {
   retrievePostsFromCourse,
   visitPost,
   composePost,
+  replyPost,
 };

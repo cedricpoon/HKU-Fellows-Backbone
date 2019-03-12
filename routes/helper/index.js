@@ -1,4 +1,5 @@
 const statusMsg = require('../status/messages');
+const { getCourses } = require('../../moodle/crawler');
 
 function responseError(code, response) {
   response.json({
@@ -43,6 +44,18 @@ function sortByReplies(a, b) {
   return bReply - aReply;
 }
 
+const resolveCoursePathFromCode = async (code, cookieString) => {
+  const courses = await getCourses({ cookieString });
+  if (courses) {
+    for (let i = 0; i < courses.length; i += 1) {
+      if (courses[i].id === code.toUpperCase()) {
+        return courses[i].path;
+      }
+    }
+  }
+  throw new Error('moodle-not-enrolled');
+};
+
 module.exports = {
   responseError,
   responseSuccess,
@@ -54,4 +67,5 @@ module.exports = {
     generic: genericFilter,
     title: titleFilter,
   },
+  resolveCoursePathFromCode,
 };

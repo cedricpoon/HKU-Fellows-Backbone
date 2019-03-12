@@ -3,8 +3,9 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt, hash } = require('../security/safe');
-const { responseError, responseSuccess } = require('./helper');
+const { responseError, responseSuccess, resolveCoursePathFromCode } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
+const { moodleCoursePath } = require('../moodle/urls');
 
 const router = express.Router();
 
@@ -156,7 +157,7 @@ router.route('/:topicId/reply').post(async (req, res) => {
   const { topicId } = req.params;
   const {
     username, token, moodleKey,
-    content, anonymous,
+    code, content, anonymous,
   } = req.body;
 
   try {
@@ -169,8 +170,27 @@ router.route('/:topicId/reply').post(async (req, res) => {
       const cookieString = decrypt(moodleKey);
 
       // reply moodle post
-      // const result = await crawler.visitPost({ cookieString, postId: topicId });
-      // responseSuccess(result, res);
+      const coursePath = await resolveCoursePathFromCode(code, cookieString);
+      const post = await crawler.visitPost({ cookieString, postId: topicId });
+      const defaultForum = await crawler.getDefaultForum({ cookieString, coursePath });
+      const moodleConfig = await crawler.getForumConfigKeypair({
+        cookieString,
+        forumPath: defaultForum.path,
+      });
+
+      const mCourseId = coursePath.replace(moodleCoursePath, '');
+      const mDiscussionId = topicId.replace('mod', '');
+      const parentId = post.posts[0].id.replace('p', '');
+      const newReply = await crawler.replyPost({
+        cookieString,
+        mCourseId,
+        mDiscussionId,
+        parentId,
+        moodleConfig,
+        title: post.title,
+        content,
+      });
+      responseSuccess(newReply, res);
     } else if (anonymous === '0' || anonymous === '1') {
       // get content of native post
       const result = await insertNativeReply(topicId, username, content, anonymous);
@@ -181,6 +201,9 @@ router.route('/:topicId/reply').post(async (req, res) => {
   } catch (err) {
     console.log(err);
     switch (err.message) {
+      case 'moodle-post-not-created':
+        responseError(406, res);
+        break;
       case 'moodle-not-enrolled':
         responseError(412, res);
         break;
