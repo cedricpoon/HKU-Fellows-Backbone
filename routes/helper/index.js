@@ -1,4 +1,5 @@
 const statusMsg = require('../status/messages');
+const handleError = require('./errors');
 
 function responseError(code, response) {
   response.json({
@@ -46,6 +47,7 @@ function sortByReplies(a, b) {
 module.exports = {
   responseError,
   responseSuccess,
+  handleError,
   sortBy: {
     timestamp: sortByTimestamp,
     replies: sortByReplies,
