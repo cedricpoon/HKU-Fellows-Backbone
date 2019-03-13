@@ -8,6 +8,7 @@ const {
   responseSuccess,
   sortBy,
   filter: filterer,
+  handleError,
 } = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
@@ -227,22 +228,7 @@ router.route('/:code/:index').post(async (req, res) => {
       updateOffset(result, code, username);
       responseSuccess(result, res, result.length === 0 ? 204 : 200);
     } catch (err) {
-      switch (err.message) {
-        case 'database-error':
-          responseError(502, res);
-          break;
-        case 'crawling-error':
-          responseError(421, res);
-          break;
-        case 'login-error':
-          responseError(401, res);
-          break;
-        case 'moodle-key-timeout':
-          responseError(408, res);
-          break;
-        default:
-          responseError(500, res);
-      }
+      handleError(err, res);
     }
   }
 });

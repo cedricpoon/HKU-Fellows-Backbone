@@ -1,4 +1,5 @@
 const statusMsg = require('../status/messages');
+const handleError = require('./errors');
 const { getCourses } = require('../../moodle/crawler');
 
 function responseError(code, response) {
@@ -59,6 +60,7 @@ const resolveCoursePathFromCode = async (code, cookieString) => {
 module.exports = {
   responseError,
   responseSuccess,
+  handleError,
   sortBy: {
     timestamp: sortByTimestamp,
     replies: sortByReplies,
