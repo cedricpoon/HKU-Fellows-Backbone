@@ -1,6 +1,5 @@
-const { responseError } = require('./index');
-
 module.exports = (error, response) => {
+  const { responseError } = require('./index'); //eslint-disable-line
   switch (error.message) {
     case 'loginMoodle-err2':
       responseError(400, response);
