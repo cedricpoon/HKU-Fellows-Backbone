@@ -113,8 +113,12 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
           Temperature,
           PrimaryHashtag,
           SecondaryHashtag,
-          sum(case when T.TopicId = R.TopicId then 1 else 0 end) as ReplyNo
-        from Topic T, Post P, Reply R
+          count(ReplyId) as ReplyNo
+        from Topic T
+        inner join Post P
+          on T.PostId = P.PostId
+        left join Reply R
+          on T.TopicId = R.TopicId
           where T.CourseId = ?
             and T.PostId = P.PostId
             and P.Timestamp <= FROM_UNIXTIME(? / 1000)
