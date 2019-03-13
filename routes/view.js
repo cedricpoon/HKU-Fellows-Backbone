@@ -190,7 +190,7 @@ router.route('/:topicId/reply').post(async (req, res) => {
         title: post.title,
         content,
       });
-      responseSuccess(newReply, res);
+      responseSuccess({ postId: newReply.id }, res);
     } else if (anonymous === '0' || anonymous === '1') {
       // get content of native post
       const result = await insertNativeReply(topicId, username, content, anonymous);

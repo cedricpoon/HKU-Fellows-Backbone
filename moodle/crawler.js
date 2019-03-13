@@ -150,7 +150,13 @@ const replyPost = ({
       if (moodle_hku_hk_mod_forum_reply.includes('Your post was successfully added.')
         || moodle_hku_hk_mod_forum_reply.includes('This post will be mailed out immediately to all forum subscribers.')
       ) {
-        resolve({});
+        const $ = cheerio.load(moodle_hku_hk_mod_forum_reply, { decodeEntities: false });
+        const newPost = {
+          id: $('.lastpost').find($('.commands')).children('a').attr('href')
+            .replace(`http://${moodleDomain}${moodleForumPostPath}${mDiscussionId}#`, ''),
+          native: false,
+        };
+        resolve(newPost);
       }
       reject(new Error('moodle-post-not-created'));
     })
