@@ -1,7 +1,7 @@
 const express = require('express');
 
 const { db } = require('../database/connect');
-const { responseError, responseSuccess } = require('./helper');
+const { responseSuccess, handleError } = require('./helper');
 const { tokenGatekeeper } = require('./auth');
 
 const router = express.Router();
@@ -50,22 +50,7 @@ const voteRouter = value => async (req, res) => {
     await ratePost(postId, username, value);
     responseSuccess({}, res);
   } catch (err) {
-    switch (err.message) {
-      case 'entry-exist-error':
-        responseError(409, res);
-        break;
-      case 'self-voting-error':
-        responseError(410, res);
-        break;
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'login-error':
-        responseError(401, res);
-        break;
-      default:
-        responseError(500, res);
-    }
+    handleError(err, res);
   }
 };
 
