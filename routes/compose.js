@@ -14,7 +14,7 @@ const insertNativePost = async ({
 }) => {
   const currentTime = Date.now();
   const topicId = hash(`Topic${title}${currentTime}`);
-  const postId = hash(title + currentTime);
+  const postId = hash(`Post${title}${currentTime}`);
 
   try {
     await db.query({
@@ -68,7 +68,7 @@ router.route('/native/:code').post(async (req, res) => {
   } = req.body;
 
   try {
-    const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : null;
+    const hashtag = _hashtag ? JSON.parse(decodeURI(_hashtag)) : {};
     // check username and token are matched
     await tokenGatekeeper({ userId: username, token });
     // compose post to native database
