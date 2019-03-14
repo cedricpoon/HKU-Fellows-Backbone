@@ -2,10 +2,9 @@ const express = require('express');
 
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
-const { decrypt, hash } = require('../security/safe');
+const { decrypt } = require('../security/safe');
 const { responseSuccess, handleError } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
-const { moodleCoursePath } = require('../moodle/urls');
 
 const router = express.Router();
 
@@ -96,36 +95,6 @@ const adoptAnswer = async (topicId, postId, username) => {
   }
 };
 
-const insertNativeReply = async (topicId, username, content, anonymous) => {
-  const currentTime = Date.now();
-  const postId = hash(username + currentTime);
-  const replyId = hash(`Reply${username}${currentTime}`);
-
-  try {
-    await db.query({
-      sql: `insert into Post (PostId, Content, Author, Anonymous)
-            values (?, ?, ?, ?)`,
-      values: [
-        postId,
-        content,
-        username,
-        anonymous === '1' ? 1 : 0,
-      ],
-    });
-    await db.query({
-      sql: 'insert into Reply values (?, ?, ?)',
-      values: [
-        replyId,
-        postId,
-        topicId,
-      ],
-    });
-    return { postId };
-  } catch (e) {
-    throw new Error('database-error');
-  }
-};
-
 router.route('/:topicId/adopt').post(async (req, res) => {
   const { topicId } = req.params;
   const { username, token, postId } = req.body;
@@ -138,75 +107,6 @@ router.route('/:topicId/adopt').post(async (req, res) => {
     responseSuccess({}, res);
   } catch (err) {
     handleError(err, res);
-  }
-});
-
-router.route('/:topicId/reply').post(async (req, res) => {
-  const { topicId } = req.params;
-  const {
-    username, token, moodleKey,
-    code, content, anonymous,
-  } = req.body;
-
-  try {
-    // check username and token are matched
-    await tokenGatekeeper({ userId: username, token });
-
-    if (topicId.startsWith('mod')) {
-      // check moodleKey is valid
-      await moodleKeyValidator({ moodleKey });
-      const cookieString = decrypt(moodleKey);
-
-      // reply moodle post
-      const coursePath = await resolveCoursePathFromCode(code, cookieString);
-      const post = await crawler.visitPost({ cookieString, postId: topicId });
-      const defaultForum = await crawler.getDefaultForum({ cookieString, coursePath });
-      const moodleConfig = await crawler.getForumConfigKeypair({
-        cookieString,
-        forumPath: defaultForum.path,
-      });
-
-      const mCourseId = coursePath.replace(moodleCoursePath, '');
-      const mDiscussionId = topicId.replace('mod', '');
-      const parentId = post.posts[0].id.replace('p', '');
-      const newReply = await crawler.replyPost({
-        cookieString,
-        mCourseId,
-        mDiscussionId,
-        parentId,
-        moodleConfig,
-        title: post.title,
-        content,
-      });
-      responseSuccess({ postId: newReply.id }, res);
-    } else if (anonymous === '0' || anonymous === '1') {
-      // get content of native post
-      const result = await insertNativeReply(topicId, username, content, anonymous);
-      responseSuccess(result, res);
-    } else {
-      responseError(422, res);
-    }
-  } catch (err) {
-    console.log(err);
-    switch (err.message) {
-      case 'moodle-post-not-created':
-        responseError(406, res);
-        break;
-      case 'moodle-not-enrolled':
-        responseError(412, res);
-        break;
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'login-error':
-        responseError(401, res);
-        break;
-      case 'moodle-key-timeout':
-        responseError(408, res);
-        break;
-      default:
-        responseError(500, res);
-    }
   }
 });
 
