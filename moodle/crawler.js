@@ -1,6 +1,7 @@
 const { https, http } = require('follow-redirects');
 const querystring = require('querystring');
 const cheerio = require('cheerio');
+const { showdown } = require('./markdown');
 
 const { delay } = require('./config');
 
@@ -80,7 +81,7 @@ const composePost = ({
     _qf__mod_forum_post_form: 1,
     mform_isexpanded_id_general: 1,
     subject: title,
-    'message[text]': content,
+    'message[text]': showdown.makeHtml(content),
     'message[format]': 1,
     'message[itemid]': moodleConfig.itemid,
     discussionsubscribe: 1,
