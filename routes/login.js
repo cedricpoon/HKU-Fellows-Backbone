@@ -3,7 +3,7 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt, encrypt, hash } = require('../security/safe');
-const { responseError, responseSuccess } = require('./helper');
+const { responseError, responseSuccess, handleError } = require('./helper');
 
 const router = express.Router();
 
@@ -29,19 +29,7 @@ const loginCallback = ({ username, password, response }) => {
         }
       })
       .catch((error) => {
-        switch (error.message) {
-          case 'unauthenticated':
-            responseError(401, response);
-            break;
-          case 'loginMoodle-err1':
-            responseError(421, response);
-            break;
-          case 'loginMoodle-err2':
-            responseError(400, response);
-            break;
-          default:
-            responseError(500, response);
-        }
+        handleError(error, response);
       });
   } else {
     responseError(422, response);

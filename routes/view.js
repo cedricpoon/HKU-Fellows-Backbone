@@ -3,7 +3,7 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../security/safe');
-const { responseError, responseSuccess } = require('./helper');
+const { responseSuccess, handleError } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 
 const router = express.Router();
@@ -106,19 +106,7 @@ router.route('/:topicId/adopt').post(async (req, res) => {
     await adoptAnswer(topicId, postId, username);
     responseSuccess({}, res);
   } catch (err) {
-    switch (err.message) {
-      case 'inaccessible':
-        responseError(403, res);
-        break;
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'login-error':
-        responseError(401, res);
-        break;
-      default:
-        responseError(500, res);
-    }
+    handleError(err, res);
   }
 });
 
@@ -143,23 +131,7 @@ router.route('/:topicId').post(async (req, res) => {
       responseSuccess(result, res);
     }
   } catch (err) {
-    console.log(err);
-    switch (err.message) {
-      case 'moodle-not-enrolled':
-        responseError(412, res);
-        break;
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'login-error':
-        responseError(401, res);
-        break;
-      case 'moodle-key-timeout':
-        responseError(408, res);
-        break;
-      default:
-        responseError(500, res);
-    }
+    handleError(err, res);
   }
 });
 

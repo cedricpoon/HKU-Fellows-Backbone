@@ -111,14 +111,70 @@ paths:
       responses:
         200:
           $ref: "#/components/responses/Rate"
-  /compose/{code}:
+  /compose/native/{courseId}:
     post:
-      summary: Create a post with details
-      description: Compose a post in native database or in Moodle
+      summary: Create a post with details natively
+      description: Compose a post in native database
       tags:
         - Create Posts
       parameters:
-        - name: code
+        - name: courseId
+          in: path
+          description: Course code
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                title:
+                  type: string
+                  description: Title of the post being created
+                subtitle:
+                  type: string
+                  description: Subtitle of the post being created (Nullable)
+                hashtag:
+                  $ref: "#/components/schemas/hashtag"
+                content:
+                  type: string
+                  description: Content of the post being created
+                anonymous:
+                  type: integer
+                  minimum: 0
+                  maximum: 1
+                  description: Determine whether the post author is anonymous
+      responses:
+        200:
+          description: Success - 200<br>Error - Refer to `routes/helper/errors.js`
+          content:
+            application/json:
+              schema:
+                properties:
+                  topicId:
+                    type: string
+                    description: TopicId of the newly created native topic
+          examples:
+            Success:
+              status: 200
+              payload: {"topicId": "09731E0E98A000EC9671815395C2B42D2A491C400165503DF41BDEC3E443A671"}
+            Failure:
+              status: 500
+              error: "Unknown error"
+  /compose/moodle/{courseId}:
+    post:
+      summary: Create a post with details in Moodle default forum of course
+      description: Compose a post in native in Moodle
+      tags:
+        - Create Posts
+      parameters:
+        - name: courseId
           in: path
           description: Course code
           required: true
@@ -139,34 +195,19 @@ paths:
                 title:
                   type: string
                   description: Title of the post being created
-                subtitle:
-                  type: string
-                  description: Subtitle of the post being created (Nullable)
-                hashtag:
-                  $ref: "#/components/schemas/hashtag"
                 content:
                   type: string
                   description: Content of the post being created
-                anonymous:
-                  type: integer
-                  minimum: 0
-                  maximum: 1
-                  description: Determine whether the post author is anonymous or not (Nullable when native = 0)
-                native:
-                  type: integer
-                  minimum: 0
-                  maximum: 1
-                  description: Determine whether the post created in native database or Moodle
       responses:
         200:
-          description: 200 - Success<br>204 - Return empty post<br>401 - Unauthenticated<br>404 - Moodle no Default Forum<br>406 - Moodle post not created<br>408 - Moodle Key Timeout<br>412 - Course not enrolled in Moodle<br>500 - Unknown error<br>502 - Database issue
+          description: Success - 200, 204<br>Error - Refer to `routes/helper/errors.js`
           content:
             application/json:
               schema:
                 properties:
-                  payload:
-                    type: list
-                    description: Info of the post created
+                  topicId:
+                    type: string
+                    description: TopicId of the newly created moodle topic
           examples:
             Success:
               status: 200
@@ -537,7 +578,7 @@ components:
       description: Generated account secret key from `UserId`, `Date` and `CIPER_KEY`
     hashtag:
       type: object
-      description: Hashtag object to be searched via `LIKE` in SQL (Nullable)
+      description: Hashtag object (Nullable), will be searched via `LIKE` in SQL
       properties:
         primary:
           type: string

@@ -1,7 +1,7 @@
 const express = require('express');
 
 const { db } = require('../database/connect');
-const { responseError, responseSuccess } = require('./helper');
+const { responseSuccess, handleError } = require('./helper');
 const { tokenGatekeeper } = require('./auth');
 
 const router = express.Router();
@@ -30,16 +30,7 @@ router.route('/temperature').post(async (req, res) => {
     const result = await queryTemperature(username);
     responseSuccess(result, res);
   } catch (err) {
-    switch (err.message) {
-      case 'database-error':
-        responseError(502, res);
-        break;
-      case 'login-error':
-        responseError(401, res);
-        break;
-      default:
-        responseError(500, res);
-    }
+    handleError(err, res);
   }
 });
 

@@ -8,6 +8,7 @@ const {
   responseSuccess,
   sortBy,
   filter: filterer,
+  handleError,
 } = require('./helper');
 const { postLimitPerLoad } = require('./config');
 const filterMode = require('../constant/filter');
@@ -112,8 +113,12 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
           Temperature,
           PrimaryHashtag,
           SecondaryHashtag,
-          sum(case when T.TopicId = R.TopicId then 1 else 0 end) as ReplyNo
-        from Topic T, Post P, Reply R
+          count(ReplyId) as ReplyNo
+        from Topic T
+        inner join Post P
+          on T.PostId = P.PostId
+        left join Reply R
+          on T.TopicId = R.TopicId
           where T.CourseId = ?
             and T.PostId = P.PostId
             and P.Timestamp <= FROM_UNIXTIME(? / 1000)
@@ -227,22 +232,7 @@ router.route('/:code/:index').post(async (req, res) => {
       updateOffset(result, code, username);
       responseSuccess(result, res, result.length === 0 ? 204 : 200);
     } catch (err) {
-      switch (err.message) {
-        case 'database-error':
-          responseError(502, res);
-          break;
-        case 'crawling-error':
-          responseError(421, res);
-          break;
-        case 'login-error':
-          responseError(401, res);
-          break;
-        case 'moodle-key-timeout':
-          responseError(408, res);
-          break;
-        default:
-          responseError(500, res);
-      }
+      handleError(err, res);
     }
   }
 });
