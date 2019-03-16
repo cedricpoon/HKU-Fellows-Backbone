@@ -149,7 +149,7 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
         solved: dbobj.Solved,
         title: dbobj.Title,
         subtitle: dbobj.Subtitle,
-        timestamp: dbobj.Timestamp.replace('Z', ''),
+        timestamp: dbobj.Timestamp,
         temperature: dbobj.Temperature,
       };
       if (dbobj.PrimaryHashtag) resultobj.primaryHashtag = dbobj.PrimaryHashtag;
