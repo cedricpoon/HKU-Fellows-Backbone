@@ -143,6 +143,7 @@ const replyPost = ({
     'message[format]': 1,
     'message[itemid]': moodleConfig.itemid,
     discussionsubscribe: 1,
+    attachments: moodleConfig.attachments,
     submitbutton: 'Post to forum',
   };
 
@@ -267,6 +268,23 @@ const getForums = ({ cookieString, coursePath, generalOnly }) => new Promise((re
       setTimeout(() => {
         resolve(forums);
       }, delay);
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const getReplyConfigKeypair = ({ cookieString, replyPath }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString, path: replyPath })
+    .then((moodle_hku_hk_mod_forum_reply) => {
+      const $ = cheerio.load(moodle_hku_hk_mod_forum_reply, { decodeEntities: false });
+
+      resolve({
+        id: $('input[name="parent"]').attr('value'),
+        sesskey: $('input[name="sesskey"]').attr('value'),
+        itemid: $('input[name="message[itemid]"]').attr('value'),
+        attachments: $('input[name="message[attachments]"]').attr('value'),
+      });
     })
     .catch((e) => {
       reject(e);
@@ -465,6 +483,7 @@ module.exports = {
   getCourses,
   getDefaultForum,
   getForumConfigKeypair,
+  getReplyConfigKeypair,
   retrievePostsFromCourse,
   visitPost,
   composePost,

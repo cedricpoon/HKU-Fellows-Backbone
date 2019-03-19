@@ -7,13 +7,13 @@ const {
   responseSuccess, responseError, handleError, resolveCoursePathFromCode,
 } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
-const { moodleCoursePath } = require('../moodle/urls');
+const { moodleDomain, moodleCoursePath, moodleReplyPath } = require('../moodle/urls');
 
 const router = express.Router();
 
 const insertNativeReply = async (topicId, username, content, anonymous) => {
   const currentTime = Date.now();
-  const postId = hash(username + currentTime);
+  const postId = hash(`Post${username}${currentTime}`);
   const replyId = hash(`Reply${username}${currentTime}`);
 
   try {
@@ -24,7 +24,7 @@ const insertNativeReply = async (topicId, username, content, anonymous) => {
         postId,
         content,
         username,
-        anonymous === '1' ? 1 : 0,
+        anonymous,
       ],
     });
     await db.query({
@@ -78,18 +78,18 @@ router.route('/moodle/:topicId').post(async (req, res) => {
     await moodleKeyValidator({ moodleKey });
     const cookieString = decrypt(moodleKey);
 
-    // reply moodle post
     const coursePath = await resolveCoursePathFromCode(code, cookieString);
     const post = await crawler.visitPost({ cookieString, postId: topicId });
-    const defaultForum = await crawler.getDefaultForum({ cookieString, coursePath });
-    const moodleConfig = await crawler.getForumConfigKeypair({
-      cookieString,
-      forumPath: defaultForum.path,
-    });
 
     const mCourseId = coursePath.replace(moodleCoursePath, '');
     const mDiscussionId = topicId.replace('mod', '');
     const parentId = post.posts[0].id.replace('p', '');
+    const moodleConfig = await crawler.getReplyConfigKeypair({
+      cookieString,
+      replyPath: `http://${moodleDomain}${moodleReplyPath}${parentId}`,
+    });
+
+    // reply moodle post
     const newReply = await crawler.replyPost({
       cookieString,
       mCourseId,
