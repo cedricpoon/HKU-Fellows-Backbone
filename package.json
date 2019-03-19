@@ -16,12 +16,12 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
-    "cookie-parser": "~1.4.3",
+    "cookie-parser": "^1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.0",
-    "follow-redirects": "^1.6.1",
+    "follow-redirects": "^1.7.0",
     "http-errors": "~1.6.2",
-    "js-yaml": "^3.12.1",
+    "js-yaml": "^3.12.2",
     "morgan": "~1.9.0",
     "mysql": "^2.16.0",
     "showdown": "^1.9.0",
@@ -29,9 +29,9 @@
     "turndown": "^5.0.3"
   },
   "devDependencies": {
-    "eslint": "^5.13.0",
+    "eslint": "^5.15.2",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.16.0",
-    "nodemon": "^1.18.9"
+    "nodemon": "^1.18.10"
   }
 }
