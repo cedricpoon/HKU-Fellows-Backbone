@@ -104,3 +104,5 @@ router.route('/moodle/:topicId').post(async (req, res) => {
     handleError(err, res);
   }
 });
+
+module.exports = router;
