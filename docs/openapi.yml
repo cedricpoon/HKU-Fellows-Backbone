@@ -23,6 +23,8 @@ tags:
     description: Composing posts related routes from `compose.js`
   - name: Rate Posts
     description: Voting posts related routes from `vote.js`
+  - name: Reply Posts
+    description: Replying posts related routes from `reply.js`
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
@@ -170,7 +172,7 @@ paths:
   /compose/moodle/{courseId}:
     post:
       summary: Create a post with details in Moodle default forum of course
-      description: Compose a post in native in Moodle
+      description: Compose a post in Moodle
       tags:
         - Create Posts
       parameters:
@@ -319,16 +321,65 @@ paths:
             Failure:
               status: 500
               error: "Unknown error"
-  /view/{topicId}/reply:
+  /reply/native/{topicId}:
     post:
-      summary: Reply to a post
-      description: Post a reply to a topic post
+      summary: Reply to a post in native database
+      description: Post a reply to a native post
       tags:
-        - Fetch Posts
+        - Reply Posts
       parameters:
         - name: topicId
           in: path
           description: Id of a topic post
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+                content:
+                  type: string
+                  description: Content of the post being created
+                anonymous:
+                  type: integer
+                  minimum: 0
+                  maximum: 1
+                  description: Determine whether the post author is anonymous or not
+      responses:
+        200:
+          description: 200 - Success<br>401 - Unauthenticated<br>422 - Parameter(s) mismatched<br>500 - Unknown error<br>502 - Database issue
+          content:
+            application/json:
+              schema:
+                properties:
+                  postId:
+                    type: string
+                    description: Id of reply post
+          examples:
+            Success:
+              status: 200
+              payload:
+                postId: "7b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc0202342"
+            Failure:
+              status: 500
+              error: "Unknown error"
+  /reply/moodle/{topicId}:
+    post:
+      summary: Reply to a moodle post
+      description: Post a reply to a post in moodle
+      tags:
+        - Reply Posts
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of a moodle post
           required: true
           schema:
             type: string
@@ -350,14 +401,9 @@ paths:
                 content:
                   type: string
                   description: Content of the post being created
-                anonymous:
-                  type: integer
-                  minimum: 0
-                  maximum: 1
-                  description: Determine whether the post author is anonymous or not (Nullable when posting to Moodle)
       responses:
         200:
-          description: 200 - Success<br>401 - Unauthenticated<br>406 - Moodle post not created<br>408 - Moodle Key Timeout<br>412 - Course not enrolled in Moodle<br>422 - Parameter(s) mismatched<br>500 - Unknown error<br>502 - Database issue
+          description: 200 - Success<br>401 - Unauthenticated<br>406 - Moodle post not created<br>408 - Moodle Key Timeout<br>412 - Course not enrolled in Moodle<br>500 - Unknown error
           content:
             application/json:
               schema:
@@ -369,7 +415,7 @@ paths:
             Success:
               status: 200
               payload:
-                postId: "7b4c2a9840c9d58ce624cfb2c6dd988c9d4dfc0377fcc21d5594ce1cc0202342"
+                postId: "p871704"
             Failure:
               status: 500
               error: "Unknown error"
