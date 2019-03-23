@@ -14,6 +14,7 @@ const {
   moodleForumPostPathMode1,
   moodleComposePath,
   moodleComposeForumIdPath,
+  moodleReplyPath,
 } = require('./urls');
 
 const {
@@ -111,6 +112,52 @@ const composePost = ({
           }
         });
 
+        resolve(newPost);
+      }
+      reject(new Error('moodle-post-not-created'));
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const replyPost = ({
+  cookieString,
+  mCourseId,
+  mDiscussionId,
+  parentId,
+  moodleConfig,
+  title,
+  content,
+}) => new Promise((resolve, reject) => {
+  const postData = {
+    course: mCourseId,
+    discussion: mDiscussionId,
+    parent: parentId,
+    reply: parentId,
+    sesskey: moodleConfig.sesskey,
+    _qf__mod_forum_post_form: 1,
+    mform_isexpanded_id_general: 1,
+    subject: `Re: ${title}`,
+    'message[text]': content,
+    'message[format]': 1,
+    'message[itemid]': moodleConfig.itemid,
+    discussionsubscribe: 1,
+    attachments: moodleConfig.attachments,
+    submitbutton: 'Post to forum',
+  };
+
+  visitMoodle({ cookieString, path: moodleReplyPath, postData })
+    .then((moodle_hku_hk_mod_forum_reply) => {
+      if (moodle_hku_hk_mod_forum_reply.includes('Your post was successfully added.')
+        || moodle_hku_hk_mod_forum_reply.includes('This post will be mailed out immediately to all forum subscribers.')
+      ) {
+        const $ = cheerio.load(moodle_hku_hk_mod_forum_reply, { decodeEntities: false });
+        const newPost = {
+          id: $('.lastpost').find($('.commands')).children('a').attr('href')
+            .replace(`http://${moodleDomain}${moodleForumPostPath}${mDiscussionId}#`, ''),
+          native: false,
+        };
         resolve(newPost);
       }
       reject(new Error('moodle-post-not-created'));
@@ -221,6 +268,23 @@ const getForums = ({ cookieString, coursePath, generalOnly }) => new Promise((re
       setTimeout(() => {
         resolve(forums);
       }, delay);
+    })
+    .catch((e) => {
+      reject(e);
+    });
+});
+
+const getReplyConfigKeypair = ({ cookieString, replyPath }) => new Promise((resolve, reject) => {
+  visitMoodle({ cookieString, path: replyPath })
+    .then((moodle_hku_hk_mod_forum_reply) => {
+      const $ = cheerio.load(moodle_hku_hk_mod_forum_reply, { decodeEntities: false });
+
+      resolve({
+        id: $('input[name="parent"]').attr('value'),
+        sesskey: $('input[name="sesskey"]').attr('value'),
+        itemid: $('input[name="message[itemid]"]').attr('value'),
+        attachments: $('input[name="message[attachments]"]').attr('value'),
+      });
     })
     .catch((e) => {
       reject(e);
@@ -419,7 +483,9 @@ module.exports = {
   getCourses,
   getDefaultForum,
   getForumConfigKeypair,
+  getReplyConfigKeypair,
   retrievePostsFromCourse,
   visitPost,
   composePost,
+  replyPost,
 };
