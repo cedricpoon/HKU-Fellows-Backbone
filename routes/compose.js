@@ -3,7 +3,7 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt, hash } = require('../security/safe');
-const { responseSuccess, handleError } = require('./helper');
+const { responseSuccess, handleError, resolveCoursePathFromCode } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 const { moodleCoursePath } = require('../moodle/urls');
 
@@ -45,18 +45,6 @@ const insertNativePost = async ({
   } catch (e) {
     throw new Error('database-error');
   }
-};
-
-const resolveCoursePathFromCode = async (code, cookieString) => {
-  const courses = await crawler.getCourses({ cookieString });
-  if (courses) {
-    for (let i = 0; i < courses.length; i += 1) {
-      if (courses[i].id === code.toUpperCase()) {
-        return courses[i].path;
-      }
-    }
-  }
-  throw new Error('moodle-not-enrolled');
 };
 
 router.route('/native/:code').post(async (req, res) => {

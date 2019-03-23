@@ -10,4 +10,5 @@ module.exports = {
   moodleComposePath: '/mod/forum/post.php',
   moodleComposeForumIdPath: '/mod/forum/post.php?forum=',
   moodlePluginFile: '/pluginfile.php',
+  moodleReplyPath: '/mod/forum/post.php?reply=',
 };
