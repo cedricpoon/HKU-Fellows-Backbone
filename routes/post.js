@@ -92,7 +92,7 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
   if (filter === filterMode.MOODLE) return [];
   let orderBy;
   switch (filter) {
-    case filterMode.TIMESTAMP:
+    case filterMode.TEMPERATURE:
       orderBy = 'Temperature';
       break;
     case filterMode.REPLIES:
