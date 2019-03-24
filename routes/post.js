@@ -92,7 +92,7 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
   if (filter === filterMode.MOODLE) return [];
   let orderBy;
   switch (filter) {
-    case filterMode.TIMESTAMP:
+    case filterMode.TEMPERATURE:
       orderBy = 'Temperature';
       break;
     case filterMode.REPLIES:
@@ -128,7 +128,7 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
               (SecondaryHashtag like ? or isNull(SecondaryHashtag))
             )
           group by T.TopicId
-          order by ${orderBy} DESC
+          order by ${orderBy} DESC, T.TopicId ASC
           limit ? offset ?
       `,
       values: [
@@ -164,23 +164,23 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
 };
 
 const sliceCachedMoodlePosts = async (array, code, username, number) => {
-  const data = array.slice(number);
   if (number > 0) {
     await db.query({
       sql: `update MoodleCache set Data = ?
               where UserId = ? and CourseId = ?`,
       values: [
-        JSON.stringify(data),
+        JSON.stringify(array.slice(number)),
         username,
         code.toUpperCase(),
       ],
     });
   }
-  return data;
 };
 
-const updateOffset = async (array, code, username) => {
-  const newOffset = array.filter(record => !record.native).length;
+const updateOffset = async (array, moodlePosts, code, username, offset) => {
+  const mShownSize = array.filter(record => !record.native).length;
+  const newOffset = mShownSize + offset;
+  sliceCachedMoodlePosts(moodlePosts, code, username, mShownSize);
   await db.query({
     sql: `update MoodleCache set Offset = ?
             where UserId = ? and CourseId = ?`,
@@ -223,13 +223,11 @@ router.route('/:code/:index').post(async (req, res) => {
         code, index, time, offset, filter, query, hashtag || {},
       );
       // hybrid sort
-      const result = nativePosts.concat(
-        await sliceCachedMoodlePosts(moodlePosts, code, username, offset),
-      )
+      const result = nativePosts.concat(moodlePosts)
         .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
         .slice(0, postLimitPerLoad);
       // update offset
-      updateOffset(result, code, username);
+      updateOffset(result, moodlePosts, code, username, offset);
       responseSuccess(result, res, result.length === 0 ? 204 : 200);
     } catch (err) {
       handleError(err, res);
