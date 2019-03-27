@@ -8,13 +8,14 @@
     "test": "eslint .",
     "server": "node ./bin/www",
     "server-ndm": "./node_modules/nodemon/bin/nodemon.js ./bin/www",
-    "docker": "npm run build-docker && . ./scripts/set-credential.sh && npm run start-docker && ./scripts/post-docker.sh",
+    "docker": ". ./scripts/set-credential.sh && npm run build-docker && npm run start-docker && ./scripts/post-docker.sh",
     "build-docker": "docker build . -t hkuf-backbone",
-    "start-docker": "docker run -e RDS_HOSTNAME -e RDS_USERNAME -e RDS_PASSWORD -p 8080:80 -d hkuf-backbone",
+    "start-docker": "docker run -p 8080:80 -d hkuf-backbone",
     "remove-docker": "./scripts/remove-docker.sh",
     "stop-docker": "./scripts/stop-docker.sh"
   },
   "dependencies": {
+    "aws-sdk": "^2.429.0",
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "^1.4.4",
     "debug": "^4.1.1",
