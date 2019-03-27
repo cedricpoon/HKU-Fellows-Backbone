@@ -38,7 +38,7 @@ function register({ deviceToken, userMeta }) {
 
 function notify({ deviceArn, content, title }) {
   return new Promise((resolve, reject) => {
-    if (!sns || !snsArn) reject(new Error('no-aws-sns-service'));
+    if (!sns) reject(new Error('no-aws-sns-service'));
 
     const params = {
       Message: encodeURI(JSON.stringify(content)),
