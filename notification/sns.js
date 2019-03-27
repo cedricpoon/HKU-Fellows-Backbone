@@ -20,13 +20,13 @@ function createSNS() {
 
 const sns = createSNS();
 
-function register({ deviceToken, userMeta }) {
+function register({ fcmToken, userMeta }) {
   return new Promise((resolve, reject) => {
     if (!sns || !snsArn) reject(new Error('no-aws-sns-service'));
 
     const params = {
       PlatformApplicationArn: snsArn,
-      Token: deviceToken,
+      Token: fcmToken,
       CustomUserData: userMeta,
     };
     sns.createPlatformEndpoint(params, (err, data) => {
@@ -36,7 +36,7 @@ function register({ deviceToken, userMeta }) {
   });
 }
 
-function notify({ deviceArn, content, title }) {
+function notify({ arn, content, title }) {
   return new Promise((resolve, reject) => {
     if (!sns) reject(new Error('no-aws-sns-service'));
 
@@ -44,7 +44,7 @@ function notify({ deviceArn, content, title }) {
       Message: encodeURI(JSON.stringify(content)),
       MessageStructure: 'json',
       Subject: title,
-      TargetArn: deviceArn,
+      TargetArn: arn,
     };
     sns.publish(params, (err, data) => {
       if (err) reject(new Error('no-aws-sns-service'));
