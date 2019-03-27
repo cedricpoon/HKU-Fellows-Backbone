@@ -13,10 +13,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// swagger-ui on development only
 if (app.get('env') !== 'production') {
+  // swagger-ui on development only
   const swaggerDocument = yaml.safeLoad(fs.readFileSync('./docs/openapi.yml', 'utf8'));
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+  // read from .env
+  require('dotenv').config() //eslint-disable-line
 }
 
 fs.readdirSync('./routes', { withFileTypes: true })
