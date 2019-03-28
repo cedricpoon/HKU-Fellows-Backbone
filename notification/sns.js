@@ -5,8 +5,9 @@ function configureAWS() {
   const { accessKeyId, secretAccessKey } = aws;
   if (accessKeyId && secretAccessKey) {
     AWS.config.update({ ...aws });
-    throw new Error('no-aws-env-var');
+    return;
   }
+  throw new Error('no-aws-env-var');
 }
 
 function createSNS() {
@@ -30,8 +31,19 @@ function register({ fcmToken, userMeta }) {
       CustomUserData: userMeta,
     };
     sns.createPlatformEndpoint(params, (err, data) => {
-      if (err) reject(new Error('no-aws-sns-service'));
-      resolve(data.EndpointArn);
+      if (err || data == null) reject(new Error('no-aws-sns-service'));
+      else resolve(data.EndpointArn);
+    });
+  });
+}
+
+function rescind({ arn }) {
+  return new Promise((resolve, reject) => {
+    if (!sns) reject(new Error('no-aws-sns-service'));
+
+    sns.deleteEndpoint({ EndpointArn: arn }, (err, data) => {
+      if (err || data == null) reject(new Error('no-aws-sns-service'));
+      else resolve();
     });
   });
 }
@@ -47,10 +59,12 @@ function notify({ arn, content, title }) {
       TargetArn: arn,
     };
     sns.publish(params, (err, data) => {
-      if (err) reject(new Error('no-aws-sns-service'));
-      resolve(data.MessageId);
+      if (err || data == null) reject(new Error('no-aws-sns-service'));
+      else resolve(data.MessageId);
     });
   });
 }
 
-module.exports = { sns, register, notify };
+module.exports = {
+  sns, register, rescind, notify,
+};

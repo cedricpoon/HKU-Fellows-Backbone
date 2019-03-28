@@ -87,7 +87,6 @@ const adoptAnswer = async (topicId, postId, username) => {
       values: [postId, topicId],
     });
   } catch (e) {
-    console.log(e);
     if (e.message === 'inaccessible') {
       throw e;
     }

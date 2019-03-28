@@ -28,6 +28,40 @@ tags:
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /logout:
+    post:
+      summary: Logout to vanish ARN
+      description: Update the user account to forget logged device
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: Success - 204<br>Error - Refer to `routes/helper/errors.js`
+          content:
+            application/json:
+              schema:
+                properties:
+                  username:
+                    $ref: "#/components/schemas/username"
+                  token:
+                    $ref: "#/components/schemas/token"
+          examples:
+            Success:
+              status: 204
+              payload: {}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /profile/temperature:
     post:
       summary: Get user temperature

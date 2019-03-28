@@ -4,7 +4,7 @@ const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt, encrypt, hash } = require('../security/safe');
 const { responseError, responseSuccess, handleError } = require('./helper');
-const { sns, register } = require('../notification/sns');
+const { register, rescind } = require('../notification');
 
 const router = express.Router();
 
@@ -37,14 +37,6 @@ const loginCallback = async ({ username, password, response }) => {
   return null;
 };
 
-const updateArn = async ({ username, arn }) => {
-  await db.query({
-    sql: `update User set ARN = ?
-            where UserId = ?`,
-    values: [arn, username],
-  });
-};
-
 router.route('/validate').post((req, res) => {
   if (req.body.moodleKey) {
     crawler.proveLogin({
@@ -73,7 +65,7 @@ router.route('/passphrase').post(async (req, res) => {
     password: password === '' ? ' ' : password,
     response: res,
   });
-  responseSuccess(credential, res);
+  if (credential) responseSuccess(credential, res);
 });
 
 router.route('/password').post(async (req, res) => {
@@ -85,12 +77,14 @@ router.route('/password').post(async (req, res) => {
     response: res,
   });
   try {
-    if (fcmToken && sns) {
-      // register for device in order to receive push notification
-      const arn = await register({ fcmToken, userMeta: `${username}::${credential.token}` });
-      updateArn({ arn, username });
+    if (credential) {
+      await rescind({ userId: username });
+      if (fcmToken) {
+        // register for device in order to receive push notification
+        register({ fcmToken, userId: username, token: credential.token });
+      }
+      responseSuccess(credential, res);
     }
-    responseSuccess(credential, res);
   } catch (e) {
     handleError(e, res);
   }
