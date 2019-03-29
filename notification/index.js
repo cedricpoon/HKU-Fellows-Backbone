@@ -1,30 +1,63 @@
 const { db } = require('../database/connect');
-const { rescind: _rescind, register: _register } = require('./sns');
+const sns = require('./sns');
 
 async function rescind({ userId }) {
-  let arn;
   try {
-    const [{ ARN: _arn }] = await db.query({
-      sql: 'select ARN from User where UserId = ?',
+    const result = await db.query({
+      sql: `select ARN, DM.FCM as FCM
+              from User as U, DeviceMap as DM
+              where UserId = ? and U.FCM = DM.FCM`,
       values: [userId],
     });
-    arn = _arn;
+    if (result.length > 0) {
+      const [{ ARN: arn, FCM: fcm }] = result;
+      sns.rescind({ arn });
+      await db.query({
+        sql: 'update User set FCM = NULL where UserId = ?',
+        values: [userId],
+      });
+      db.query({
+        sql: 'delete from DeviceMap where FCM = ?',
+        values: [fcm],
+      });
+    }
   } catch (e) {
-    throw new Error('database-error');
+    if (e.message === 'no-aws-sns-service') throw (e);
+    else throw new Error('database-error');
   }
-  if (arn) _rescind({ arn });
 }
 
 async function register({ fcmToken, userId, token }) {
-  const arn = await _register({ fcmToken, userMeta: `${userId}::${token}` });
   try {
-    await db.query({
-      sql: `update User set ARN = ?
+    const result = await db.query({
+      sql: `select ARN
+              from DeviceMap
+              where FCM = ?`,
+      values: [fcmToken],
+    });
+    const userMeta = `${userId}::${token.substring(0, 7)}`;
+    if (result.length === 0) {
+      const arn = await sns.register({ fcmToken, userMeta });
+      await db.query({
+        sql: 'insert into DeviceMap set ?',
+        values: [{ FCM: fcmToken, ARN: arn }],
+      });
+    } else {
+      await db.query({
+        sql: 'update User set FCM = NULL where FCM = ?',
+        values: [fcmToken],
+      });
+      const [{ ARN: arn }] = result;
+      sns.update({ arn, attributes: { CustomUserData: userMeta } });
+    }
+    db.query({
+      sql: `update User set FCM = ?
               where UserId = ?`,
-      values: [arn, userId],
+      values: [fcmToken, userId],
     });
   } catch (e) {
-    throw new Error('database-error');
+    if (e.message === 'no-aws-sns-service') throw (e);
+    else throw new Error('database-error');
   }
 }
 

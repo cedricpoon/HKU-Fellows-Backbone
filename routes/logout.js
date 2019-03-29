@@ -1,6 +1,5 @@
 const express = require('express');
 
-const { db } = require('../database/connect');
 const { responseError, responseSuccess, handleError } = require('./helper');
 const { tokenGatekeeper } = require('./auth');
 const { rescind } = require('../notification');
@@ -13,13 +12,9 @@ router.route('/').post(async (req, res) => {
     if (username && token) {
       // check username and token are matched
       await tokenGatekeeper({ userId: username, token });
+
       rescind({ userId: username });
 
-      await db.query({
-        sql: `update User set ARN = NULL
-                where UserId = ? and Token = ?`,
-        values: [username, token],
-      });
       responseSuccess({}, res, 204);
     } else {
       responseError(422, res);
