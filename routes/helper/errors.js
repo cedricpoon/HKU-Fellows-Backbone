@@ -37,6 +37,9 @@ module.exports = (error, response) => {
     case 'loginMoodle-err1':
       responseError(421, response);
       break;
+    case 'no-aws-sns-service':
+      responseError(425, response);
+      break;
     case 'database-error':
       responseError(502, response);
       break;
