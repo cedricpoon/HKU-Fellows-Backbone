@@ -48,6 +48,17 @@ function rescind({ arn }) {
   });
 }
 
+function update({ arn, attributes: Attributes }) {
+  return new Promise((resolve, reject) => {
+    if (!sns) reject(new Error('no-aws-sns-service'));
+
+    sns.setEndpointAttributes({ EndpointArn: arn, Attributes }, (err, data) => {
+      if (err || data == null) reject(new Error('no-aws-sns-service'));
+      else resolve();
+    });
+  });
+}
+
 function notify({ arn, content, title }) {
   return new Promise((resolve, reject) => {
     if (!sns) reject(new Error('no-aws-sns-service'));
@@ -66,5 +77,5 @@ function notify({ arn, content, title }) {
 }
 
 module.exports = {
-  sns, register, rescind, notify,
+  sns, register, rescind, notify, update,
 };
