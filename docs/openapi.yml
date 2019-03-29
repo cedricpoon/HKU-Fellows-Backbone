@@ -28,6 +28,40 @@ tags:
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /logout:
+    post:
+      summary: Logout to vanish ARN
+      description: Update the user account to forget logged device
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: Success - 204<br>Error - Refer to `routes/helper/errors.js`
+          content:
+            application/json:
+              schema:
+                properties:
+                  username:
+                    $ref: "#/components/schemas/username"
+                  token:
+                    $ref: "#/components/schemas/token"
+          examples:
+            Success:
+              status: 204
+              payload: {}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /profile/temperature:
     post:
       summary: Get user temperature
@@ -570,6 +604,9 @@ paths:
                     type: string
                     format: password
                     description: Password of HKU Portal
+                  fcmToken:
+                    type: string
+                    description: FCM device token for firebase push notification (Nullable)
       responses:
         200:
           $ref: "#/components/responses/Login"
@@ -624,7 +661,7 @@ components:
           status: 409
           error: "Entry conflict"
     Login:
-      description: 200 - Success<br>502 - RDS connectivity issue<br>401 - Username / Password mismatched<br>421 - No 2nd / 3rd level login redirect url matched<br>400 - No 2nd / 3rd level login redirect<br>500 - Unknown crawler issue<br>422 - Parameter(s) mismatched
+      description: 200 - Success<br>502 - RDS connectivity issue<br>401 - Username / Password mismatched<br>421 - No 2nd / 3rd level login redirect url matched<br>400 - No 2nd / 3rd level login redirect<br>500 - Unknown crawler issue<br>422 - Parameter(s) mismatched<br>425 - AWS SNS issue
       content:
         application/json:
           schema:

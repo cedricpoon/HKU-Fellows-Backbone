@@ -13,6 +13,7 @@ module.exports = {
   412: 'Moodle not enrolled',
   421: 'Crawling error',
   422: 'Malformed request',
+  425: 'SNS related failure',
 
   500: 'Unknown error',
   502: 'Database connection failure',
