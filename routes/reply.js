@@ -8,6 +8,7 @@ const {
 } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 const { moodleDomain, moodleCoursePath, moodleReplyPath } = require('../moodle/urls');
+const { broadcast } = require('../notification');
 
 const router = express.Router();
 
@@ -55,6 +56,8 @@ router.route('/native/:topicId').post(async (req, res) => {
     if (anonymous === '0' || anonymous === '1') {
       // get content of native post
       const result = await insertNativeReply(topicId, username, content, anonymous);
+      // push notify all subscribed users
+      await broadcast({ topicId, replierId: username });
       responseSuccess(result, res);
     } else {
       responseError(422, res);
