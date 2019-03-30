@@ -6,6 +6,7 @@ const { decrypt, hash } = require('../security/safe');
 const { responseSuccess, handleError, resolveCoursePathFromCode } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
 const { moodleCoursePath } = require('../moodle/urls');
+const { subscribeTopic } = require('../notification');
 
 const router = express.Router();
 
@@ -63,6 +64,8 @@ router.route('/native/:code').post(async (req, res) => {
     const newTopicId = await insertNativePost({
       username, title, subtitle, hashtag, content, anonymous, code,
     });
+    // subscribe to push notification for newly created topic
+    await subscribeTopic({ userId: username, topicId: newTopicId });
     responseSuccess({ topicId: newTopicId }, res);
   } catch (err) {
     handleError(err, res);
