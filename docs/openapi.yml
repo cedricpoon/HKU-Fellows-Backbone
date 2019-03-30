@@ -643,6 +643,24 @@ paths:
             Failure:
               status: 502
               error: "Database connection failure"
+  /broadcastTopic/{topicId}:
+    get:
+      summary: Fire push notification for specific topic **for internal development ONLY**
+      description: It will trigger `broadcast()` once
+      tags:
+        - Miscellaneous
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of Topic
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: "#/components/responses/Basic"
+        500:
+          $ref: "#/components/responses/Failure"
 components:
   responses:
     Rate:
