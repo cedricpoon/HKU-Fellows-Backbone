@@ -1,5 +1,8 @@
 const AWS = require('aws-sdk');
+const removeMd = require('remove-markdown');
+
 const { aws, snsArn } = require('./config');
+const { addSlashes, limit, noNewline } = require('./helper');
 
 function configureAWS() {
   const { accessKeyId, secretAccessKey } = aws;
@@ -59,14 +62,20 @@ function update({ arn, attributes: Attributes }) {
   });
 }
 
+function f(s) {
+  return addSlashes(noNewline(limit(removeMd(s))));
+}
+
 function notify({ arn, content, title }) {
   return new Promise((resolve, reject) => {
     if (!sns) reject(new Error('no-aws-sns-service'));
-
+    const message = {
+      GCM: `{ "notification": { "title": "${f(title)}", "text": "${f(content)}" } }`,
+    };
+    console.log(message);
     const params = {
-      Message: encodeURI(JSON.stringify(content)),
+      Message: JSON.stringify(message),
       MessageStructure: 'json',
-      Subject: title,
       TargetArn: arn,
     };
     sns.publish(params, (err, data) => {

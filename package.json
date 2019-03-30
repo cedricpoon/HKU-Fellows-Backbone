@@ -15,7 +15,7 @@
     "stop-docker": "./scripts/stop-docker.sh"
   },
   "dependencies": {
-    "aws-sdk": "^2.429.0",
+    "aws-sdk": "^2.432.0",
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "^1.4.4",
     "debug": "^4.1.1",
@@ -25,15 +25,16 @@
     "js-yaml": "^3.13.0",
     "morgan": "~1.9.0",
     "mysql": "^2.16.0",
+    "remove-markdown": "^0.3.0",
     "showdown": "^1.9.0",
     "swagger-ui-express": "^4.0.2",
     "turndown": "^5.0.3"
   },
   "devDependencies": {
-    "eslint": "^5.15.3",
+    "dotenv": "^7.0.0",
+    "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.16.0",
-    "nodemon": "^1.18.10",
-    "dotenv": "^7.0.0"
+    "nodemon": "^1.18.10"
   }
 }

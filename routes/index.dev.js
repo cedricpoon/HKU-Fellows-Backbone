@@ -4,7 +4,8 @@
 const express = require('express');
 
 const { db } = require('../database/connect');
-const { responseError, responseSuccess } = require('./helper');
+const { responseError, responseSuccess, handleError } = require('./helper');
+const { broadcast } = require('../notification');
 
 const router = express.Router();
 
@@ -15,6 +16,16 @@ router.route('/database').get(async (req, res) => {
     responseSuccess(result, res);
   } catch (err) {
     responseError(502, res);
+  }
+});
+
+router.route('/broadcastTopic/:topicId').get(async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    await broadcast({ topicId });
+    responseSuccess({ 'Sent successfully': true }, res);
+  } catch (e) {
+    handleError(e, res);
   }
 });
 
