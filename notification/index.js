@@ -27,59 +27,6 @@ async function rescind({ userId }) {
   }
 }
 
-async function subscribeTopic({ userId, topicId }) {
-  try {
-    await db.query({
-      sql: 'insert into TopicRegistry set ?',
-      values: [{ TopicId: topicId, UserId: userId }],
-    });
-  } catch (e) {
-    throw new Error('database-error');
-  }
-}
-
-async function unsubscribeTopic({ userId, topicId }) {
-  try {
-    await db.query({
-      sql: 'delete from TopicRegistry where UserId = ? and TopicId = ?',
-      values: [userId, topicId],
-    });
-  } catch (e) {
-    throw new Error('database-error');
-  }
-}
-
-async function broadcast({ topicId, replierId: _replierId }) {
-  try {
-    const replierId = _replierId || '';
-    const arnList = await db.query({
-      sql: `select ARN, Title, Content
-              from
-                (select T.Title as Title, P.Content as Content
-                  from Topic as T
-                    inner join Reply as R on R.TopicId = T.TopicId
-                    inner join Post as P on P.PostId = R.PostId
-                  where T.TopicId = ?
-                  order by P.Timestamp desc
-                  limit 1) as A,
-                DeviceMap as DM
-                  inner join User as U on U.FCM = DM.fcm
-                  inner join TopicRegistry as TR on U.UserId = TR.UserId
-              where
-                TR.TopicId = ? and
-                U.UserId <> ?`,
-      values: [topicId, topicId, replierId],
-    });
-    for (let i = 0; i < arnList.length; i += 1) {
-      const { ARN: arn, Title: title, Content: content } = arnList[i];
-      sns.notify({ arn, content, title: `Re: ${title}` });
-    }
-  } catch (e) {
-    if (e.message === 'no-aws-sns-service') throw (e);
-    else throw new Error('database-error');
-  }
-}
-
 async function register({ fcmToken, userId, token }) {
   try {
     const result = await db.query({
@@ -114,10 +61,4 @@ async function register({ fcmToken, userId, token }) {
   }
 }
 
-module.exports = {
-  rescind,
-  register,
-  subscribeTopic,
-  unsubscribeTopic,
-  broadcast,
-};
+module.exports = { rescind, register };
