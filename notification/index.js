@@ -34,8 +34,7 @@ async function subscribeTopic({ userId, topicId }) {
       values: [{ TopicId: topicId, UserId: userId }],
     });
   } catch (e) {
-    if (e.message === 'no-aws-sns-service') throw (e);
-    else throw new Error('database-error');
+    throw new Error('database-error');
   }
 }
 
@@ -46,8 +45,7 @@ async function unsubscribeTopic({ userId, topicId }) {
       values: [userId, topicId],
     });
   } catch (e) {
-    if (e.message === 'no-aws-sns-service') throw (e);
-    else throw new Error('database-error');
+    throw new Error('database-error');
   }
 }
 
