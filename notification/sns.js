@@ -66,11 +66,14 @@ function f(s) {
   return addSlashes(noNewline(limit(removeMd(s))));
 }
 
-function notify({ arn, content, title }) {
+function notify({
+  arn, content, title, payload: _payload,
+}) {
   return new Promise((resolve, reject) => {
     if (!sns) reject(new Error('no-aws-sns-service'));
+    const payload = _payload ? `, "data": ${JSON.stringify(_payload)}` : '';
     const message = {
-      GCM: `{ "notification": { "title": "${f(title)}", "text": "${f(content)}" } }`,
+      GCM: `{ "notification": { "title": "${f(title)}", "text": "${f(content)}" } ${payload} }`,
     };
     console.log(message);
     const params = {

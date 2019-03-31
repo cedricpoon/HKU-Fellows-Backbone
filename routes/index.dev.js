@@ -23,7 +23,7 @@ router.route('/broadcastTopic/:topicId').get(async (req, res) => {
   try {
     const { topicId } = req.params;
     await broadcast({ topicId });
-    responseSuccess({ 'Sent successfully': true }, res);
+    responseSuccess({ sent: true }, res);
   } catch (e) {
     handleError(e, res);
   }
