@@ -73,7 +73,12 @@ async function broadcast({ topicId, replierId: _replierId }) {
     const notices = [];
     for (let i = 0; i < arnList.length; i += 1) {
       const { ARN: arn, Title: title, Content: content } = arnList[i];
-      notices.push(sns.notify({ arn, content, title: `Re: ${title}` }));
+      notices.push(sns.notify({
+        arn,
+        content,
+        title: `Re: ${title}`,
+        payload: { post: topicId },
+      }));
     }
     await Promise.all(notices);
   } catch (e) {
