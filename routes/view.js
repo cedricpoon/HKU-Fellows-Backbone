@@ -3,8 +3,9 @@ const express = require('express');
 const crawler = require('../moodle/crawler');
 const { db } = require('../database/connect');
 const { decrypt } = require('../security/safe');
-const { responseSuccess, handleError } = require('./helper');
+const { responseSuccess, handleError, responseError } = require('./helper');
 const { tokenGatekeeper, moodleKeyValidator } = require('./auth');
+const { isSubscribed } = require('../notification');
 
 const router = express.Router();
 
@@ -94,6 +95,25 @@ const adoptAnswer = async (topicId, postId, username) => {
   }
 };
 
+const registerTopic = async (req, res, { sql, values }) => {
+  const { topicId } = req.params;
+  const { username, token } = req.body;
+
+  try {
+    // check username and token are matched
+    await tokenGatekeeper({ userId: username, token });
+
+    if (topicId.startsWith('mod')) {
+      responseError(501, res);
+    } else {
+      await db.query({ sql, values });
+      responseSuccess({}, res);
+    }
+  } catch (e) {
+    handleError(e, res);
+  }
+};
+
 router.route('/:topicId/adopt').post(async (req, res) => {
   const { topicId } = req.params;
   const { username, token, postId } = req.body;
@@ -107,6 +127,26 @@ router.route('/:topicId/adopt').post(async (req, res) => {
   } catch (err) {
     handleError(err, res);
   }
+});
+
+router.route('/:topicId/subscribe').post(async (req, res) => {
+  const { topicId } = req.params;
+  const { username } = req.body;
+
+  await registerTopic(req, res, {
+    sql: 'insert into TopicRegistry set ?',
+    values: [{ TopicId: topicId, UserId: username }],
+  });
+});
+
+router.route('/:topicId/unsubscribe').post(async (req, res) => {
+  const { topicId } = req.params;
+  const { username } = req.body;
+
+  await registerTopic(req, res, {
+    sql: 'delete from TopicRegistry where TopicId = ? and UserId = ?',
+    values: [topicId, username],
+  });
 });
 
 router.route('/:topicId').post(async (req, res) => {
@@ -127,7 +167,9 @@ router.route('/:topicId').post(async (req, res) => {
     } else {
       // get content of native post
       const result = await getNativeReply(topicId, username);
-      responseSuccess(result, res);
+      // get subscribed status
+      const subscribed = await isSubscribed({ userId: username, topicId });
+      responseSuccess({ ...result, subscribed }, res);
     }
   } catch (err) {
     handleError(err, res);

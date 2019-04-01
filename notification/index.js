@@ -38,6 +38,18 @@ async function subscribeTopic({ userId, topicId }) {
   }
 }
 
+async function isSubscribed({ userId, topicId }) {
+  try {
+    const [{ Subscribed: subscribed }] = await db.query({
+      sql: 'select count(*) as Subscribed from TopicRegistry where UserId = ? and TopicId = ?',
+      values: [userId, topicId],
+    });
+    return (subscribed === 1);
+  } catch (e) {
+    throw new Error('database-error');
+  }
+}
+
 async function unsubscribeTopic({ userId, topicId }) {
   try {
     await db.query({
@@ -127,4 +139,5 @@ module.exports = {
   subscribeTopic,
   unsubscribeTopic,
   broadcast,
+  isSubscribed,
 };
