@@ -17,7 +17,7 @@ tags:
     description: User related informational routes from `profile.js`
   - name: Posts
     description: Post related routes from `post.js`
-  - name: Fetch Posts
+  - name: Topics
     description: Viewing posts related routes from `view.js`
   - name: Create Posts
     description: Composing posts related routes from `compose.js`
@@ -28,6 +28,72 @@ tags:
   - name: Export
     description: Export various data from Database, **for internal development ONLY**
 paths:
+  /view/{topicId}/subscribe:
+    post:
+      summary: To subscribe a topic for push notification
+      description: It will add an entry on `TopicRegistry`
+      tags:
+        - Topics
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of a topic
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: Success - 200<br>Error - Refer to `routes/helper/errors.js`
+          examples:
+            Success:
+              status: 200
+              payload: {}
+            Failure:
+              status: 500
+              error: "Unknown error"
+  /view/{topicId}/unsubscribe:
+    post:
+      summary: To unsubscribe a topic for push notification
+      description: It will remove the entry on `TopicRegistry`
+      tags:
+        - Topics
+      parameters:
+        - name: topicId
+          in: path
+          description: Id of a topic
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  $ref: "#/components/schemas/username"
+                token:
+                  $ref: "#/components/schemas/token"
+      responses:
+        200:
+          description: Success - 200<br>Error - Refer to `routes/helper/errors.js`
+          examples:
+            Success:
+              status: 200
+              payload: {}
+            Failure:
+              status: 500
+              error: "Unknown error"
   /logout:
     post:
       summary: Logout to vanish ARN
@@ -47,14 +113,6 @@ paths:
       responses:
         200:
           description: Success - 204<br>Error - Refer to `routes/helper/errors.js`
-          content:
-            application/json:
-              schema:
-                properties:
-                  username:
-                    $ref: "#/components/schemas/username"
-                  token:
-                    $ref: "#/components/schemas/token"
           examples:
             Success:
               status: 204
@@ -256,7 +314,7 @@ paths:
       summary: Load contents and reply of a post
       description: Return the details of a post chronologically in json format
       tags:
-        - Fetch Posts
+        - Topics
       parameters:
         - name: topicId
           in: path
@@ -318,7 +376,7 @@ paths:
       summary: Adopt answer to a post
       description: Author of the post choose a reply be the best answer
       tags:
-        - Fetch Posts
+        - Topics
       parameters:
         - name: topicId
           in: path
