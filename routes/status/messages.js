@@ -16,5 +16,6 @@ module.exports = {
   425: 'SNS related failure',
 
   500: 'Unknown error',
+  501: 'Not applicable to Moodle',
   502: 'Database connection failure',
 };

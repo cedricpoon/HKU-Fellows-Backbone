@@ -75,7 +75,6 @@ function notify({
     const message = {
       GCM: `{ "notification": { "title": "${f(title)}", "text": "${f(content)}" } ${payload} }`,
     };
-    console.log(message);
     const params = {
       Message: JSON.stringify(message),
       MessageStructure: 'json',
