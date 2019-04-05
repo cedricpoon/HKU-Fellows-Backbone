@@ -119,14 +119,18 @@ const getNativePosts = async (code, index, time, offset, filter, query, hashtag)
           on T.PostId = P.PostId
         left join Reply R
           on T.TopicId = R.TopicId
+        join (
+          select
+            TopicId,
+            concat(ifnull(PrimaryHashtag, ''), ifnull(SecondaryHashtag,'')) as concatenated
+          from Topic
+        ) H on H.TopicId = T.TopicId
           where T.CourseId = ?
             and T.PostId = P.PostId
             and P.Timestamp <= FROM_UNIXTIME(? / 1000)
             and (Title like ? or Subtitle like ?)
-            and (
-              (PrimaryHashtag like ? or isNull(PrimaryHashtag)) and
-              (SecondaryHashtag like ? or isNull(SecondaryHashtag))
-            )
+            and H.concatenated like ?
+            and H.concatenated like ?
           group by T.TopicId
           order by ${orderBy} DESC, T.TopicId ASC
           limit ? offset ?
