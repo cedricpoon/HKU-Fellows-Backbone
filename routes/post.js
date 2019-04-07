@@ -227,9 +227,11 @@ router.route('/:code/:index').post(async (req, res) => {
         code, index, time, offset, filter, query, hashtag || {},
       );
       // hybrid sort
-      const result = nativePosts.concat(moodlePosts)
-        .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
-        .slice(0, postLimitPerLoad);
+      const result = filter !== filterMode.TEMPERATURE
+        ? nativePosts.concat(moodlePosts)
+          .sort(filter === filterMode.REPLIES ? sortBy.replies : sortBy.timestamp)
+          .slice(0, postLimitPerLoad)
+        : nativePosts.slice(0, postLimitPerLoad);
       // update offset
       updateOffset(result, moodlePosts, code, username, offset);
       responseSuccess(result, res, result.length === 0 ? 204 : 200);
