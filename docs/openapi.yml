@@ -6,7 +6,7 @@ info:
 servers:
 - url: /
   description: Local server by `npm start` or `npm run docker`
-- url: https://api.hkufellows.ga
+- url: https://api.hkufellows.xyz
   description: Production server located on AWS EC2
 tags:
   - name: Miscellaneous
